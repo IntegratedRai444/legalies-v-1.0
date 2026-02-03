@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-serif: 'Crimson Pro', Georgia, serif;
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: #faf8f5;
+  --foreground: #1a1614;
+  --card: #ffffff;
+  --card-foreground: #1a1614;
+  --popover: #ffffff;
+  --popover-foreground: #1a1614;
+  --primary: #2d4a3e;
+  --primary-foreground: #faf8f5;
+  --secondary: #f0ebe4;
+  --secondary-foreground: #1a1614;
+  --muted: #f0ebe4;
+  --muted-foreground: #6b5f55;
+  --accent: #c4a574;
+  --accent-foreground: #1a1614;
+  --destructive: #b84444;
+  --border: #e0d8cd;
+  --input: #e0d8cd;
+  --ring: #2d4a3e;
+  --chart-1: #2d4a3e;
+  --chart-2: #c4a574;
+  --chart-3: #8b7355;
+  --chart-4: #5c8a6e;
+  --chart-5: #d4a84b;
+  --sidebar: #f5f1eb;
+  --sidebar-foreground: #1a1614;
+  --sidebar-primary: #2d4a3e;
+  --sidebar-primary-foreground: #faf8f5;
+  --sidebar-accent: #e8e2d9;
+  --sidebar-accent-foreground: #1a1614;
+  --sidebar-border: #e0d8cd;
+  --sidebar-ring: #2d4a3e;
+}
+
+.dark {
+  --background: #1a1614;
+  --foreground: #f5f1eb;
+  --card: #252220;
+  --card-foreground: #f5f1eb;
+  --popover: #252220;
+  --popover-foreground: #f5f1eb;
+  --primary: #c4a574;
+  --primary-foreground: #1a1614;
+  --secondary: #2d2926;
+  --secondary-foreground: #f5f1eb;
+  --muted: #2d2926;
+  --muted-foreground: #a39687;
+  --accent: #5c8a6e;
+  --accent-foreground: #f5f1eb;
+  --destructive: #cf6565;
+  --border: #3d3733;
+  --input: #3d3733;
+  --ring: #c4a574;
+  --chart-1: #c4a574;
+  --chart-2: #5c8a6e;
+  --chart-3: #8b7355;
+  --chart-4: #d4a84b;
+  --chart-5: #7da88d;
+  --sidebar: #252220;
+  --sidebar-foreground: #f5f1eb;
+  --sidebar-primary: #c4a574;
+  --sidebar-primary-foreground: #1a1614;
+  --sidebar-accent: #2d2926;
+  --sidebar-accent-foreground: #f5f1eb;
+  --sidebar-border: #3d3733;
+  --sidebar-ring: #c4a574;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+  h1, h2, h3 {
+    font-family: 'Crimson Pro', Georgia, serif;
+  }
+}
+
+@layer utilities {
+  .legal-gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, #1a3028 100%);
+  }
+  .gold-gradient {
+    background: linear-gradient(135deg, var(--accent) 0%, #a08560 100%);
+  }
+}
