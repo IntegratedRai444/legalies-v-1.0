@@ -26,7 +26,9 @@ export async function GET() {
 
     // Trigger automated reminder generation
     try {
-      await checkReminders(user.id, profile.firm_id)
+      if (profile.firm_id) {
+        await checkReminders(user.id, profile.firm_id)
+      }
     } catch (reminderError) {
       console.error("Reminder generation error:", reminderError)
       // Continue with notifications even if reminders fail
@@ -41,7 +43,7 @@ export async function GET() {
       .limit(50)
 
     if (error) {
-      console.error("Notifications API error:", error)
+      console.error("Notifications fetch error:", error)
       return NextResponse.json({ success: false, error: 'Failed to load notifications' }, { status: 500 })
     }
 
