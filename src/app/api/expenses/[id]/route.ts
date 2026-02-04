@@ -1,6 +1,115 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { logActivity } from '@/lib/activity'
 const normalize = (v?: string) => v?.toLowerCase().trim()
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, firm_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.firm_id) {
+      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+    }
+
+    // Validate expense belongs to case in same firm
+    const { data: existingExpense, error: fetchError } = await supabase
+      .from('case_expenses')
+      .select(`
+        title,
+        description,
+        amount,
+        expense_date,
+        category,
+        added_by,
+        case_id,
+        case:cases!inner(firm_id)
+      `)
+      .eq('id', id)
+      .eq('case.firm_id', profile.firm_id)
+      .single()
+
+    if (fetchError || !existingExpense) {
+      return NextResponse.json({ error: 'Expense not found or access denied' }, { status: 404 })
+    }
+
+    // Ownership check - only creator or admin can edit
+    const isAdmin = normalize(profile.role) === 'admin'
+    const isOwner = existingExpense.added_by === user.id
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: 'Only expense creator or admin can edit expenses' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { title, description, amount, expense_date, category } = body
+
+    // Build update data with only provided fields
+    const updateData: any = {}
+    if (title !== undefined) updateData.title = title
+    if (description !== undefined) updateData.description = description
+    if (amount !== undefined) updateData.amount = parseFloat(amount)
+    if (expense_date !== undefined) updateData.expense_date = expense_date
+    if (category !== undefined) updateData.category = category
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
+
+    // Update expense
+    const { data: updatedExpense, error: updateError } = await supabase
+      .from('case_expenses')
+      .update(updateData)
+      .eq('id', id)
+      .select(`
+        *,
+        added_by_profile:profiles!added_by(full_name),
+        case:cases(id, case_uid, case_title)
+      `)
+      .single()
+
+    if (updateError) {
+      console.error('Expense update error:', updateError)
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+
+    // Log activity
+    await logActivity(supabase, {
+      case_id: existingExpense.case_id,
+      user_id: user.id,
+      activity_type: 'expense_update',
+      description: `updated expense "${existingExpense.title}"`,
+      metadata: { 
+        old_data: {
+          title: existingExpense.title,
+          amount: existingExpense.amount,
+          category: existingExpense.category
+        },
+        new_data: updateData
+      },
+      firm_id: profile.firm_id
+    })
+
+    return NextResponse.json(updatedExpense)
+  } catch (err: any) {
+    console.error('Expense update error:', err)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}
 
 export async function DELETE(
   request: NextRequest,

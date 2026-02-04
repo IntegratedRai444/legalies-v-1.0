@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('tasks')
-      .select('*, case:cases!inner(id, case_title, case_uid, firm_id)')
+      .select('*, case:cases!inner(id, case_title, case_uid, court_city, court_state, firm_id)')
       .eq('assigned_to', user.id)
       .eq('firm_id', profile.firm_id)
       .eq('case.firm_id', profile.firm_id)

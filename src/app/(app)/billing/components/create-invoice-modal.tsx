@@ -39,7 +39,9 @@ export function CreateInvoiceModal({ onInvoiceCreated }: { onInvoiceCreated: () 
 
   useEffect(() => {
     if (open) {
-      fetch('/api/cases')
+      fetch('/api/cases', {
+        credentials: 'include'
+      })
         .then(res => res.json())
         .then(data => setCases(data))
     }
@@ -103,6 +105,7 @@ export function CreateInvoiceModal({ onInvoiceCreated }: { onInvoiceCreated: () 
 
       const res = await fetch('/api/billing', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(invoiceData)
       })

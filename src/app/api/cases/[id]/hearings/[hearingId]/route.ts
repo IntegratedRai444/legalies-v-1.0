@@ -31,7 +31,7 @@ export async function PATCH(
     // Permission check and Firm Isolation
     const { data: caseData } = await supabase
       .from('cases')
-      .select('id, assigned_lawyer_id, firm_id')
+      .select('id, assigned_lawyer_id, firm_id, court_city, court_state')
       .eq('id', caseId)
       .eq('firm_id', profile.firm_id)
       .single()
@@ -58,7 +58,11 @@ export async function PATCH(
       })
       .eq('id', hearingId)
       .eq('case_id', caseId)
-      .select()
+      .select(`
+        *,
+        case:cases!inner(firm_id)
+      `)
+      .eq('case.firm_id', profile.firm_id)
       .single()
 
     if (error) {
@@ -85,6 +89,106 @@ export async function PATCH(
     }
 
     return NextResponse.json(hearing)
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string, hearingId: string }> }
+) {
+  try {
+    const { id: caseId, hearingId } = await params
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, firm_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.firm_id) {
+      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+    }
+
+    // Permission check and Firm Isolation
+    const { data: caseData } = await supabase
+      .from('cases')
+      .select('id, assigned_lawyer_id, firm_id, court_city, court_state')
+      .eq('id', caseId)
+      .eq('firm_id', profile.firm_id)
+      .single()
+
+    if (!caseData) {
+      return NextResponse.json({ error: 'Case not found or access denied' }, { status: 404 })
+    }
+
+    const isAdmin = normalize(profile.role) === 'admin'
+    const isAssigned = caseData.assigned_lawyer_id === user.id
+
+    if (!isAdmin && !isAssigned) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Get hearing details before deletion for activity log
+    const { data: hearing } = await supabase
+      .from('hearings')
+      .select('hearing_date, hearing_type')
+      .eq('id', hearingId)
+      .eq('case_id', caseId)
+      .single()
+
+    if (!hearing) {
+      return NextResponse.json({ error: 'Hearing not found' }, { status: 404 })
+    }
+
+    // Delete the hearing
+    const { error } = await supabase
+      .from('hearings')
+      .delete()
+      .eq('id', hearingId)
+      .eq('case_id', caseId)
+
+    if (error) {
+      console.error('Hearing Delete Error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Recalculate next hearing date for the case
+    const { data: nextHearing } = await supabase
+      .from('hearings')
+      .select('hearing_date')
+      .eq('case_id', caseId)
+      .gte('hearing_date', new Date().toISOString().split('T')[0]) // Only future dates
+      .order('hearing_date', { ascending: true })
+      .limit(1)
+      .single()
+
+    await supabase
+      .from('cases')
+      .update({
+        next_hearing_date: nextHearing?.hearing_date || null
+      })
+      .eq('id', caseId)
+      .eq('firm_id', profile.firm_id)
+
+    // Log activity
+    await logActivity(supabase, {
+      case_id: caseId,
+      user_id: user.id,
+      activity_type: 'hearing_delete',
+      description: `deleted hearing for ${hearing.hearing_type || 'General'} on ${hearing.hearing_date}`,
+      firm_id: profile.firm_id
+    })
+
+    return NextResponse.json({ success: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

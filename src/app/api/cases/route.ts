@@ -30,7 +30,24 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('cases')
       .select(`
-        *,
+        id,
+        case_uid,
+        case_title,
+        court_name,
+        court_city,
+        court_state,
+        case_type,
+        status,
+        stage,
+        priority,
+        filing_date,
+        next_hearing_date,
+        assigned_lawyer_id,
+        created_by,
+        firm_id,
+        agreed_fee,
+        last_updated_at,
+        created_at,
         assigned_lawyer:profiles!cases_assigned_lawyer_id_fkey(id, full_name),
         case_parties(
           id,
@@ -142,19 +159,20 @@ export async function POST(request: NextRequest) {
       case_title: rawCaseData.case_title,
       case_type: rawCaseData.case_type,
       court_name: rawCaseData.court_name,
-      // court_city: rawCaseData.court_city, // REMOVED DUE TO SCHEMA MISMATCH causing 500s
+      court_city: rawCaseData.court_city,
       court_state: rawCaseData.court_state,
       filing_date: rawCaseData.filing_date || null,
       status: (rawCaseData.status || 'active').toLowerCase(),
-      stage: rawCaseData.stage || rawCaseData.case_stage || 'Notice',
+      stage: rawCaseData.stage || 'Notice',
       agreed_fee: rawCaseData.agreed_fee ? parseFloat(rawCaseData.agreed_fee) : null,
       priority: rawCaseData.priority || 'Routine',
-      assigned_lawyer_id: rawCaseData.assigned_lawyer_id || user.id
+      assigned_lawyer_id: rawCaseData.assigned_lawyer_id || user.id,
+      next_hearing_date: rawCaseData.next_hearing_date || null
     }
 
     let success = false
     let attempts = 0
-    let newCase = null
+    let newCase: any = null
 
     while (!success && attempts < 3) {
       attempts++
@@ -187,7 +205,26 @@ export async function POST(request: NextRequest) {
           firm_id: profile.firm_id,
           assigned_lawyer_id: caseData.assigned_lawyer_id || user.id
         })
-        .select()
+        .select(`
+          id,
+          case_uid,
+          case_title,
+          court_name,
+          court_city,
+          court_state,
+          case_type,
+          status,
+          stage,
+          priority,
+          filing_date,
+          next_hearing_date,
+          assigned_lawyer_id,
+          created_by,
+          firm_id,
+          agreed_fee,
+          last_updated_at,
+          created_at
+        `)
         .single()
 
       if (!caseError) {

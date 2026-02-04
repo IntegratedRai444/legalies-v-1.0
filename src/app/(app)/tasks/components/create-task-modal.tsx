@@ -40,7 +40,9 @@ export function CreateTaskModal({ open, onOpenChange, onSuccess, initialCaseId }
 
   const fetchCases = async () => {
     try {
-      const res = await fetch('/api/cases')
+      const res = await fetch('/api/cases', {
+        credentials: 'include'
+      })
       if (res.ok) {
         const data = await res.json()
         setCases(data)
@@ -61,6 +63,7 @@ export function CreateTaskModal({ open, onOpenChange, onSuccess, initialCaseId }
     try {
       const res = await fetch('/api/tasks', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,

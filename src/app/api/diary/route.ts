@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     .from('diary_notes')
     .select(`
         *,
-        case:cases!inner(id, case_uid, case_title, firm_id)
+        case:cases!inner(id, case_uid, case_title, court_city, court_state, firm_id)
       `)
     .eq('case.firm_id', profile.firm_id)
     .order('note_date', { ascending: true })
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
   if (body.case_id) {
     const { data: caseRef } = await supabase
       .from('cases')
-      .select('id')
+      .select('id, court_city, court_state')
       .eq('id', body.case_id)
       .eq('firm_id', profile.firm_id)
       .single()
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     })
     .select(`
       *,
-      case:cases(id, case_uid, case_title)
+      case:cases(id, case_uid, case_title, court_city, court_state)
     `)
     .single()
 

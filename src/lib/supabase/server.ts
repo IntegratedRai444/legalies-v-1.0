@@ -1,37 +1,16 @@
-import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 
-export async function createServerSupabaseClient() {
+export async function createSupabaseServerClient() {
   const cookieStore = await cookies()
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables')
-  }
-
   return createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              const cookieOptions = {
-                ...options,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax' as const,
-                path: '/'
-              }
-              cookieStore.set(name, value, cookieOptions)
-            })
-          } catch {
-          }
+        get(name: string) {
+          return cookieStore.get(name)?.value
         },
       },
     }
@@ -46,24 +25,13 @@ export async function createServiceRoleClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              const cookieOptions = {
-                ...options,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax' as const,
-                path: '/'
-              }
-              cookieStore.set(name, value, cookieOptions)
-            })
-          } catch {
-          }
+        get(name: string) {
+          return cookieStore.get(name)?.value
         },
       },
     }
   )
 }
+
+// Legacy export for backward compatibility
+export const createServerSupabaseClient = createSupabaseServerClient

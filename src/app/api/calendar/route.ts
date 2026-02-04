@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         .from('hearings')
         .select(`
           *,
-          case:cases!inner(id, case_uid, case_title, firm_id)
+          case:cases!inner(id, case_uid, case_title, firm_id, court_city, court_state)
         `)
         .eq('case.firm_id', firmId)
         .gte('hearing_date', startDate)
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         .from('tasks')
         .select(`
           *,
-          case:cases!inner(id, case_uid, case_title, firm_id)
+          case:cases!inner(id, case_uid, case_title, firm_id, court_city, court_state)
         `)
         .eq('case.firm_id', firmId)
         .gte('due_date', startDate)
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         .from('diary_notes')
         .select(`
           *,
-          case:cases!inner(id, case_uid, case_title, firm_id)
+          case:cases!inner(id, case_uid, case_title, firm_id, court_city, court_state)
         `)
         .eq('case.firm_id', firmId)
         .gte('note_date', startDate)

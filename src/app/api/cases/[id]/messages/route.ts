@@ -78,20 +78,26 @@ export async function POST(
     return NextResponse.json({ error: 'Message content is required' }, { status: 400 })
   }
 
-  // Step 7: Permissions - Only assigned advocates or admins can post
-  // AND firm must match
-  const { data: caseData } = await supabase
+  // Step 7: Validate case ownership first
+  const { data: caseCheck } = await supabase
     .from('cases')
-    .select('assigned_lawyer_id, created_by, firm_id')
+    .select('id, court_city, court_state')
     .eq('id', id)
     .eq('firm_id', profile.firm_id)
     .single()
 
-  if (!caseData) {
-    return NextResponse.json({ error: 'Case not found or access denied' }, { status: 404 })
+  if (!caseCheck) {
+    return NextResponse.json({ error: 'Case not found or access denied' }, { status: 403 })
   }
 
-  const isAssigned = caseData.assigned_lawyer_id === user.id || caseData.created_by === user.id
+  // Step 8: Permissions - Only assigned advocates or admins can post
+  const { data: caseData } = await supabase
+    .from('cases')
+    .select('assigned_lawyer_id, created_by, court_city, court_state')
+    .eq('id', id)
+    .single()
+
+  const isAssigned = caseData?.assigned_lawyer_id === user.id || caseData?.created_by === user.id
   const isAdmin = normalizeRole(profile?.role || '') === 'admin'
 
   if (!isAssigned && !isAdmin) {

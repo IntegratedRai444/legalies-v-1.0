@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, ArrowRight, Check, Plus, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Plus, X, Upload, FileText } from 'lucide-react'
 import { CASE_TYPES, CASE_STATUSES, CASE_STAGES, PARTY_ROLES } from '@/lib/types'
 import { toast } from 'sonner'
 
@@ -64,6 +64,8 @@ export default function NewCasePage() {
   const [opponents, setOpponents] = useState<PartyInput[]>([
     { name: '', phone: '', address: '', role_label: 'Respondent' }
   ])
+  const [documents, setDocuments] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
 
   const addClient = () =>
     setClients([...clients, { name: '', phone: '', address: '', role_label: 'Petitioner' }])
@@ -103,6 +105,7 @@ export default function NewCasePage() {
     try {
       const res = await fetch('/api/cases', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...caseData,
@@ -117,10 +120,38 @@ export default function NewCasePage() {
       }
 
       const result = await res.json()
+      const caseId = result.data.id
+      
+      // Upload documents if any were selected
+      if (documents.length > 0) {
+        setUploading(true)
+        toast.info('Uploading documents...')
+        
+        for (const file of documents) {
+          const formData = new FormData()
+          formData.append('file', file)
+          
+          const uploadRes = await fetch(`/api/cases/${caseId}/documents`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          })
+          
+          if (!uploadRes.ok) {
+            const error = await uploadRes.json()
+            console.error(`Failed to upload ${file.name}:`, error.error)
+            toast.error(`Failed to upload ${file.name}`)
+          }
+        }
+        
+        setUploading(false)
+      }
+      
       toast.success('Case created successfully!')
-      router.push(`/cases/${result.data.id}`)
+      router.push(`/cases/${caseId}`)
     } catch (error: any) {
       toast.error(error.message || 'Failed to create case')
+      setUploading(false)
     } finally {
       setLoading(false)
     }
@@ -129,7 +160,8 @@ export default function NewCasePage() {
   const steps = [
     { num: 1, label: 'Case Details' },
     { num: 2, label: 'Clients & Opponents' },
-    { num: 3, label: 'Review' }
+    { num: 3, label: 'Documents' },
+    { num: 4, label: 'Review' }
   ]
 
   return (
@@ -410,14 +442,81 @@ export default function NewCasePage() {
           <div className="flex justify-between pt-4">
             <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
             <Button onClick={() => setStep(3)}>
-              Next: Review <ArrowRight className="w-4 h-4 ml-2" />
+              Next: Documents <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </div>
       )}
 
-      {/* STEP 3: REVIEW */}
+      {/* STEP 3: DOCUMENTS */}
       {step === 3 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Upload Documents</CardTitle>
+            <CardDescription>Attach relevant documents like FIR, contracts, notices, or other case files.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Documents (Optional)</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-8 text-center hover:border-muted-foreground/50 transition-colors">
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  onChange={(e) => setDocuments(Array.from(e.target.files || []))}
+                  className="hidden"
+                  id="document-upload"
+                />
+                <label htmlFor="document-upload" className="cursor-pointer">
+                  <Upload className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-muted-foreground mb-2">
+                    Click to upload documents
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    PDF, DOC, DOCX, JPG, PNG up to 10MB each
+                  </p>
+                </label>
+              </div>
+            </div>
+
+            {documents.length > 0 && (
+              <div className="space-y-2">
+                <Label>Selected Documents ({documents.length})</Label>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {documents.map((file, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <FileText className="w-5 h-5 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDocuments(documents.filter((_, i) => i !== index))}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between pt-4">
+              <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+              <Button onClick={() => setStep(4)}>
+                Next: Review <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 4: REVIEW */}
+      {step === 4 && (
         <Card>
           <CardHeader>
             <CardTitle>Review & Creating</CardTitle>
@@ -454,10 +553,23 @@ export default function NewCasePage() {
               ))}
             </div>
 
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg border-b pb-1">Documents ({documents.length})</h3>
+              {documents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No documents attached</p>
+              ) : (
+                documents.map((doc, i) => (
+                  <div key={i} className="text-sm">
+                    {i + 1}. {doc.name} ({(doc.size / 1024 / 1024).toFixed(2)} MB)
+                  </div>
+                ))
+              )}
+            </div>
+
             <div className="flex justify-between pt-4">
-              <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-              <Button onClick={handleSubmit} disabled={loading}>
-                {loading ? 'Creating...' : 'Create Case'}
+              <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
+              <Button onClick={handleSubmit} disabled={loading || uploading}>
+                {loading || uploading ? (uploading ? 'Uploading...' : 'Creating...') : 'Create Case'}
               </Button>
             </div>
           </CardContent>

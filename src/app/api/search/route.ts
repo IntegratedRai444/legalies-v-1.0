@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   // Search cases by title, UID, court - WITH FIRM ISOLATION
   const { data: cases, error: casesError } = await supabase
     .from('cases')
-    .select('id, case_title, case_uid, court_name, firm_id')
+    .select('id, case_title, case_uid, court_name, court_city, court_state, firm_id')
     .eq('firm_id', firmId)
     .or(`case_title.ilike.%${query}%,case_uid.ilike.%${query}%,court_name.ilike.%${query}%`)
     .limit(5)

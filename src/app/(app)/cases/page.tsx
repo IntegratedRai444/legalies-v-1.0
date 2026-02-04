@@ -27,7 +27,9 @@ function CasesContent() {
       if (search) params.set('search', search)
       if (status && status !== 'all') params.set('status', status)
 
-      const res = await fetch(`/api/cases?${params}`)
+      const res = await fetch(`/api/cases?${params}`, {
+        credentials: 'include'
+      })
       const { data, error } = await res.json()
       if (error || !Array.isArray(data)) {
         setCases([])
@@ -151,7 +153,7 @@ function CasesContent() {
                     </div>
                     <div className="flex flex-wrap items-center gap-2 shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0">
                       {c.priority && (
-                        <Badge variant={c.priority === 'Urgent' ? 'destructive' : c.priority === 'High Attention' ? 'default' : 'outline'} className="capitalize px-3 py-0.5">
+                        <Badge variant={c.priority === 'Urgent' ? 'destructive' : c.priority === 'High' ? 'default' : 'outline'} className="capitalize px-3 py-0.5">
                           {c.priority}
                         </Badge>
                       )}

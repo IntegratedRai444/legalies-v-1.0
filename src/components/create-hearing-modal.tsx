@@ -42,7 +42,9 @@ export function CreateHearingModal({ open, onOpenChange, onSuccess, initialCaseI
 
   const fetchCases = async () => {
     try {
-      const res = await fetch('/api/cases?status=Active')
+      const res = await fetch('/api/cases?status=Active', {
+        credentials: 'include'
+      })
       const data = await res.json()
       if (Array.isArray(data)) {
         setCases(data)
@@ -66,6 +68,7 @@ export function CreateHearingModal({ open, onOpenChange, onSuccess, initialCaseI
     try {
       const res = await fetch(`/api/cases/${form.case_id}/hearings`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       })

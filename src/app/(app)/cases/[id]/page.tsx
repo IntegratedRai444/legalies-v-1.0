@@ -33,9 +33,10 @@ import {
   CheckSquare,
   Receipt,
   ChevronRight,
-  Printer
+  Printer,
+  X
 } from 'lucide-react'
-import { CaseWithParties, Hearing, DiaryNote, Task, CaseDocument, QUICK_TEMPLATES, CASE_TYPES, CASE_STATUSES, CASE_STAGES } from '@/lib/types'
+import { CaseWithParties, Hearing, DiaryNote, Task, CaseDocument, QUICK_TEMPLATES, CASE_TYPES, CASE_STATUSES, CASE_STAGES, CaseMessage } from '@/lib/types'
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CreateTaskModal } from '../../tasks/components/create-task-modal'
@@ -104,6 +105,18 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
   const [editOutcomeDialogOpen, setEditOutcomeDialogOpen] = useState(false)
   const [editingHearing, setEditingHearing] = useState<Hearing | null>(null)
+  const [editDocumentDialogOpen, setEditDocumentDialogOpen] = useState(false)
+  const [editingDocument, setEditingDocument] = useState<CaseDocument | null>(null)
+  const [editDocumentForm, setEditDocumentForm] = useState({
+    title: '',
+    category: ''
+  })
+  const [messages, setMessages] = useState<CaseMessage[]>([])
+  const [editMessageDialogOpen, setEditMessageDialogOpen] = useState(false)
+  const [editingMessage, setEditingMessage] = useState<CaseMessage | null>(null)
+  const [newMessageContent, setNewMessageContent] = useState('')
+  const [additionalDocuments, setAdditionalDocuments] = useState<File[]>([])
+  const [uploadingAdditional, setUploadingAdditional] = useState(false)
 
 
   useEffect(() => {
@@ -112,6 +125,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     fetchDocuments()
     fetchDiaryNotes()
     fetchTasks()
+    fetchMessages()
     fetchRole()
     fetchAdvocates()
   }, [id])
@@ -171,7 +185,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
   const fetchCase = async () => {
     try {
-      const res = await fetch(`/api/cases/${id}`)
+      const res = await fetch(`/api/cases/${id}`, {
+        credentials: 'include'
+      })
       const data = await res.json()
       setCaseData(data)
       if (data) {
@@ -198,7 +214,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
   const fetchHearings = async () => {
     try {
-      const res = await fetch(`/api/cases/${id}/hearings`)
+      const res = await fetch(`/api/cases/${id}/hearings`, {
+        credentials: 'include'
+      })
       const data = await res.json()
       if (data.error || !Array.isArray(data)) {
         setHearings([])
@@ -212,7 +230,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch(`/api/cases/${id}/documents`)
+      const res = await fetch(`/api/cases/${id}/documents`, {
+        credentials: 'include'
+      })
       const data = await res.json()
       if (data.error || !Array.isArray(data)) {
         setDocuments([])
@@ -226,7 +246,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
   const fetchDiaryNotes = async () => {
     try {
-      const res = await fetch(`/api/diary?case_id=${id}`)
+      const res = await fetch(`/api/diary?case_id=${id}`, {
+        credentials: 'include'
+      })
       const data = await res.json()
       if (data.error || !Array.isArray(data)) {
         setDiaryNotes([])
@@ -240,13 +262,32 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch(`/api/tasks?caseId=${id}`)
+      const res = await fetch(`/api/tasks?caseId=${id}`, {
+        credentials: 'include'
+      })
       const data = await res.json()
       if (Array.isArray(data)) {
         setTasks(data)
       }
     } catch {
       console.error('Failed to load tasks')
+    }
+  }
+
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch(`/api/cases/${id}/messages`, {
+        credentials: 'include'
+      })
+      const data = await res.json()
+      if (data.error || !Array.isArray(data)) {
+        setMessages([])
+      } else {
+        setMessages(data)
+      }
+    } catch {
+      console.error('Failed to load messages')
+      setMessages([])
     }
   }
 
@@ -259,6 +300,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     try {
       await fetch(`/api/cases/${id}/hearings`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newHearing)
       })
@@ -270,8 +312,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
         court_room: '',
         hearing_type: '',
         opponent_appearance: 'present',
-        outcome: '',
-        next_hearing_date: ''
+        outcome: ''
       })
       fetchHearings()
       fetchCase()
@@ -286,6 +327,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     try {
       const res = await fetch(`/api/cases/${id}/hearings/${editingHearing.id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           outcome: editingHearing.outcome
@@ -315,10 +357,12 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     try {
       await fetch(`/api/diary`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newNote,
-          case_id: id
+          case_id: id,
+          note_date: newNote.note_date || new Date().toISOString().split('T')[0]
         })
       })
 
@@ -339,6 +383,27 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 10MB')
+      return
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/png'
+    ]
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('File type not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG')
+      return
+    }
+
     setUploading(true)
     try {
       const fileExt = file.name.split('.').pop()
@@ -356,10 +421,12 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
       await fetch(`/api/cases/${id}/documents`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: file.name,
           file_path: publicUrl,
+          file_type: file.type,
           category: selectedCategory
         })
       })
@@ -370,6 +437,174 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       toast.error('Failed to upload document')
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleDownload = async (docId: string) => {
+    try {
+      const res = await fetch(`/api/cases/${id}/documents/${docId}/download`, {
+        credentials: 'include'
+      })
+      const data = await res.json()
+      
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to get download link')
+        return
+      }
+
+      // Open the signed URL in a new tab
+      window.open(data.url, '_blank')
+    } catch {
+      toast.error('Failed to download document')
+    }
+  }
+
+  const handleDeleteDocument = async (docId: string, docTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${docTitle}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/cases/${id}/documents/${docId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to delete document')
+        return
+      }
+
+      toast.success('Document deleted successfully')
+      fetchDocuments()
+    } catch {
+      toast.error('Failed to delete document')
+    }
+  }
+
+  const handleEditDocument = (doc: CaseDocument) => {
+    setEditingDocument(doc)
+    setEditDocumentForm({
+      title: doc.title,
+      category: doc.category || 'Evidence'
+    })
+    setEditDocumentDialogOpen(true)
+  }
+
+  const updateDocument = async () => {
+    if (!editingDocument) return
+
+    try {
+      const res = await fetch(`/api/cases/${id}/documents/${editingDocument.id}`, {
+        method: "PATCH",
+        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editDocumentForm),
+      })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        toast.error(error.error || 'Failed to update document')
+        return
+      }
+
+      toast.success('Document updated successfully')
+      setEditDocumentDialogOpen(false)
+      setEditingDocument(null)
+      fetchDocuments()
+    } catch {
+      toast.error('Failed to update document')
+    }
+  }
+
+  const handleEditMessage = (message: CaseMessage) => {
+    setEditingMessage(message)
+    setNewMessageContent(message.message)
+    setEditMessageDialogOpen(true)
+  }
+
+  const updateMessage = async () => {
+    if (!editingMessage) return
+
+    try {
+      const res = await fetch(`/api/cases/${id}/messages/${editingMessage.id}`, {
+        method: "PATCH",
+        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: newMessageContent }),
+      })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        toast.error(error.error || 'Failed to update message')
+        return
+      }
+
+      toast.success('Message updated successfully')
+      setEditMessageDialogOpen(false)
+      setEditingMessage(null)
+      setNewMessageContent('')
+      fetchMessages()
+    } catch {
+      toast.error('Failed to update message')
+    }
+  }
+
+  const handleDeleteMessage = async (messageId: string, content: string) => {
+    if (!confirm("Delete this message? This action cannot be undone.")) return
+
+    try {
+      const res = await fetch(`/api/cases/${id}/messages/${messageId}`, {
+        method: "DELETE",
+        credentials: 'include',
+      })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        toast.error(error.error || 'Failed to delete message')
+        return
+      }
+
+      toast.success('Message deleted successfully')
+      fetchMessages()
+    } catch {
+      toast.error('Failed to delete message')
+    }
+  }
+
+  const uploadAdditionalDocuments = async () => {
+    if (additionalDocuments.length === 0) return
+
+    setUploadingAdditional(true)
+    try {
+      toast.info('Uploading additional documents...')
+      
+      for (const file of additionalDocuments) {
+        const formData = new FormData()
+        formData.append('file', file)
+        
+        const uploadRes = await fetch(`/api/cases/${id}/documents`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        })
+        
+        if (!uploadRes.ok) {
+          const error = await uploadRes.json()
+          console.error(`Failed to upload ${file.name}:`, error.error)
+          toast.error(`Failed to upload ${file.name}`)
+        }
+      }
+      
+      setAdditionalDocuments([])
+      fetchDocuments()
+      toast.success('Additional documents uploaded successfully!')
+    } catch {
+      toast.error('Failed to upload additional documents')
+    } finally {
+      setUploadingAdditional(false)
     }
   }
 
@@ -539,7 +774,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
 
-            <div className="bg-primary/[0.03] px-6 py-4 border-t flex items-center justify-between group">
+            <div className="bg-primary/3 px-6 py-4 border-t flex items-center justify-between group">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   {nextAction.icon}
@@ -601,6 +836,10 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           <TabsTrigger value="notes" className="rounded-lg px-6 h-9 gap-2">
             <FileText className="w-4 h-4" />
             Case Journal
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="rounded-lg px-6 h-9 gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Messages
           </TabsTrigger>
           <TabsTrigger value="documents" className="rounded-lg px-6 h-9 gap-2">
             <Upload className="w-4 h-4" />
@@ -760,6 +999,32 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                             >
                               <Pencil className="w-4 h-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={async () => {
+                                if (!confirm("Delete this hearing? This action cannot be undone.")) return
+                                try {
+                                  const res = await fetch(`/api/cases/${id}/hearings/${h.id}`, {
+                                    method: "DELETE",
+                                    credentials: 'include',
+                                  })
+                                  if (!res.ok) {
+                                    const error = await res.json()
+                                    toast.error(error.error || 'Failed to delete hearing')
+                                    return
+                                  }
+                                  toast.success('Hearing deleted successfully')
+                                  fetchHearings()
+                                  fetchCase()
+                                } catch {
+                                  toast.error('Failed to delete hearing')
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
 
@@ -859,6 +1124,65 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           </Card>
         </TabsContent>
 
+        <TabsContent value="messages" className="focus-visible:outline-none">
+          <Card className="shadow-sm border-none">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle>Case Messages</CardTitle>
+                <p className="text-sm text-muted-foreground">Internal communication and case updates</p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {messages.length === 0 ? (
+                <div className="text-center py-20 border-2 border-dashed rounded-3xl">
+                  <MessageSquare className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No messages yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages?.map((message) => (
+                    <div key={message.id} className="p-4 border rounded-2xl bg-card space-y-3 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <MessageSquare className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm">Team Member</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(parseISO(message.created_at), 'MMM d, yyyy h:mm a')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditMessage(message)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteMessage(message.id, message.message)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-muted/30 rounded-xl border border-muted/50">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.message}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="documents" className="focus-visible:outline-none">
           <Card className="shadow-sm border-none">
             <CardHeader className="pb-4">
@@ -917,16 +1241,102 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                           </div>
                         </div>
                       </div>
-                      <a href={doc.file_path} target="_blank" rel="noopener noreferrer" className="w-full">
-                        <Button variant="secondary" size="sm" className="w-full h-9 text-xs font-bold gap-2">
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          className="flex-1 h-9 text-xs font-bold gap-2"
+                          onClick={() => handleDownload(doc.id)}
+                        >
                           <Download className="w-3.5 h-3.5" />
                           Download
                         </Button>
-                      </a>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-9 px-2"
+                          onClick={() => handleEditDocument(doc)}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          className="h-9 px-2"
+                          onClick={() => handleDeleteDocument(doc.id, doc.title)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
+
+              {/* Additional Document Upload Section */}
+              <div className="mt-8 pt-8 border-t">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Add More Documents</h3>
+                    <p className="text-sm text-muted-foreground">Upload additional case files</p>
+                  </div>
+                  
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-6 text-center hover:border-muted-foreground/50 transition-colors">
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => setAdditionalDocuments(Array.from(e.target.files || []))}
+                      className="hidden"
+                      id="additional-documents-upload"
+                    />
+                    <label htmlFor="additional-documents-upload" className="cursor-pointer">
+                      <Upload className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                      <p className="text-sm font-medium text-muted-foreground mb-1">
+                        Click to add more documents
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        PDF, DOC, DOCX, JPG, PNG up to 10MB each
+                      </p>
+                    </label>
+                  </div>
+
+                  {additionalDocuments.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Selected Documents ({additionalDocuments.length})</Label>
+                        <Button
+                          onClick={uploadAdditionalDocuments}
+                          disabled={uploadingAdditional}
+                          className="legal-gradient h-8 px-4"
+                        >
+                          {uploadingAdditional ? 'Uploading...' : 'Upload Selected'}
+                        </Button>
+                      </div>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {additionalDocuments.map((file, index) => (
+                          <div key={index} className="flex items-center gap-3 p-2 bg-muted/30 rounded-lg">
+                            <FileText className="w-4 h-4 text-muted-foreground" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setAdditionalDocuments(additionalDocuments.filter((_, i) => i !== index))}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -995,10 +1405,11 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             <div className="space-y-2">
               <Label>Next Hearing Date (TBD if empty)</Label>
+              {/* Next hearing date input removed */}
               <Input
                 type="date"
-                {/* Next hearing date input removed */}
                 className="h-12 rounded-xl"
+                disabled
               />
             </div>
             <Button
@@ -1085,7 +1496,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
             <div className="space-y-2">
               <Label>Stage</Label>
               <Select
-                value={editForm.stage}
+                value={editForm.stage || 'Notice'}
                 onValueChange={(v) => setEditForm({ ...editForm, stage: v as any })}
               >
                 <SelectTrigger className="h-12">
@@ -1109,7 +1520,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Routine">Routine</SelectItem>
-                  <SelectItem value="High Attention">High Attention</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
                   <SelectItem value="Urgent">Urgent</SelectItem>
                 </SelectContent>
               </Select>
@@ -1155,6 +1566,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                 try {
                   const res = await fetch(`/api/cases/${id}`, {
                     method: 'PATCH',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(editForm)
                   })
@@ -1193,7 +1605,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
             <div className="space-y-2">
               <Label>Priority</Label>
               <Select
-                value={newNote.priority}
+                value={newNote.priority || 'medium'}
                 onValueChange={(v) => setNewNote({ ...newNote, priority: v as any })}
               >
                 <SelectTrigger className="h-12">
@@ -1218,6 +1630,77 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
             <Button onClick={addNote} className="w-full h-12 legal-gradient">
               Save Changes
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDocumentDialogOpen} onOpenChange={setEditDocumentDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Document</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Document Title</Label>
+              <Input
+                value={editDocumentForm.title}
+                onChange={(e) => setEditDocumentForm({ ...editDocumentForm, title: e.target.value })}
+                className="h-12"
+                placeholder="Enter document title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select
+                value={editDocumentForm.category}
+                onValueChange={(v) => setEditDocumentForm({ ...editDocumentForm, category: v })}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Evidence">Evidence</SelectItem>
+                  <SelectItem value="Pleadings">Pleadings</SelectItem>
+                  <SelectItem value="Orders">Orders</SelectItem>
+                  <SelectItem value="Internal">Internal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="outline" onClick={() => setEditDocumentDialogOpen(false)}>Cancel</Button>
+              <Button
+                className="legal-gradient"
+                onClick={updateDocument}
+              >
+                Update Document
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editMessageDialogOpen} onOpenChange={setEditMessageDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Message</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Message</Label>
+              <Textarea
+                value={newMessageContent}
+                onChange={(e) => setNewMessageContent(e.target.value)}
+                placeholder="Edit your message..."
+                rows={4}
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="outline" onClick={() => setEditMessageDialogOpen(false)}>Cancel</Button>
+              <Button className="legal-gradient" onClick={updateMessage}>
+                Update Message
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

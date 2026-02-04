@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table"
 import { InvoiceStatusBadge } from "./invoice-status-badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileDown, MoreHorizontal } from "lucide-react"
+import { Eye, FileDown, MoreHorizontal, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { InvoiceDetailsModal } from "./invoice-details-modal"
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 export function InvoiceList({ refreshTrigger, status }: { refreshTrigger: number, status?: string }) {
   const supabase = createClient()
@@ -35,6 +36,30 @@ export function InvoiceList({ refreshTrigger, status }: { refreshTrigger: number
   const handleViewDetails = (id: string) => {
     setSelectedInvoiceId(id)
     setDetailsOpen(true)
+  }
+
+  const handleDeleteInvoice = async (id: string, invoiceNumber: string) => {
+    if (!confirm(`Are you sure you want to delete draft invoice ${invoiceNumber}? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/billing/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        toast.error(error.error || 'Failed to delete invoice')
+        return
+      }
+
+      toast.success('Invoice deleted successfully')
+      // Trigger refresh by calling the parent's refresh
+      window.location.reload()
+    } catch (error) {
+      toast.error('Failed to delete invoice')
+    }
   }
 
   useEffect(() => {
@@ -138,6 +163,14 @@ export function InvoiceList({ refreshTrigger, status }: { refreshTrigger: number
                     {role !== 'admin' && (
                       <DropdownMenuItem>
                         <FileDown className="mr-2 h-4 w-4" /> Download PDF
+                      </DropdownMenuItem>
+                    )}
+                    {invoice.status === 'draft' && (
+                      <DropdownMenuItem 
+                        className="text-destructive"
+                        onClick={() => handleDeleteInvoice(invoice.id, invoice.invoice_number)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete Invoice
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>

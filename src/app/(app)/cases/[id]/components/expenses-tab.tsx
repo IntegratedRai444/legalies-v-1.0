@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Plus, Trash2, Receipt, Filter } from 'lucide-react'
+import { Plus, Trash2, Receipt, Filter, Pencil } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,8 +25,10 @@ export function ExpensesTab({ caseId }: ExpensesTabProps) {
   const [expenses, setExpenses] = useState<CaseExpense[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [role, setRole] = useState<string | null>(null)
+  const [editingExpense, setEditingExpense] = useState<CaseExpense | null>(null)
   const [newExpense, setNewExpense] = useState({
     title: '',
     category: 'misc',
@@ -48,7 +50,9 @@ export function ExpensesTab({ caseId }: ExpensesTabProps) {
 
   const fetchExpenses = async () => {
     try {
-      const res = await fetch(`/api/expenses?case_id=${caseId}`)
+      const res = await fetch(`/api/expenses?case_id=${caseId}`, {
+        credentials: 'include'
+      })
       if (!res.ok) throw new Error('Failed to fetch expenses')
       const data = await res.json()
       setExpenses(data)
@@ -105,7 +109,8 @@ export function ExpensesTab({ caseId }: ExpensesTabProps) {
 
     try {
       const res = await fetch(`/api/expenses/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
 
       if (!res.ok) throw new Error('Failed to delete expense')
@@ -114,6 +119,59 @@ export function ExpensesTab({ caseId }: ExpensesTabProps) {
       fetchExpenses()
     } catch (error) {
       toast.error('Failed to delete expense')
+    }
+  }
+
+  const handleEditExpense = (expense: CaseExpense) => {
+    setEditingExpense(expense)
+    setNewExpense({
+      title: expense.title,
+      category: expense.category || 'misc',
+      amount: expense.amount.toString(),
+      expense_date: expense.expense_date,
+      description: expense.description || ''
+    })
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateExpense = async () => {
+    if (!editingExpense || !newExpense.title || !newExpense.amount || !newExpense.expense_date) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/expenses/${editingExpense.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newExpense.title,
+          category: newExpense.category,
+          amount: parseFloat(newExpense.amount),
+          expense_date: newExpense.expense_date,
+          description: newExpense.description
+        })
+      })
+
+      if (!res.ok) throw new Error('Failed to update expense')
+      
+      toast.success('Expense updated successfully')
+      setEditDialogOpen(false)
+      setEditingExpense(null)
+      setNewExpense({
+        title: '',
+        category: 'misc',
+        amount: '',
+        expense_date: format(new Date(), 'yyyy-MM-dd'),
+        description: ''
+      })
+      fetchExpenses()
+    } catch (error) {
+      toast.error('Failed to update expense')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -288,14 +346,24 @@ export function ExpensesTab({ caseId }: ExpensesTabProps) {
                     </TableCell>
                     {role !== 'admin' && (
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteExpense(expense.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            onClick={() => handleEditExpense(expense)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteExpense(expense.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -305,6 +373,83 @@ export function ExpensesTab({ caseId }: ExpensesTabProps) {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Expense Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>Update the expense details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title *</Label>
+              <Input 
+                id="edit-title" 
+                placeholder="e.g., Court Filing Fee" 
+                value={newExpense.title}
+                onChange={(e) => setNewExpense({ ...newExpense, title: e.target.value })}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-amount">Amount (₹) *</Label>
+                <Input 
+                  id="edit-amount" 
+                  type="number" 
+                  placeholder="0.00" 
+                  value={newExpense.amount}
+                  onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-date">Date *</Label>
+                <Input 
+                  id="edit-date" 
+                  type="date" 
+                  value={newExpense.expense_date}
+                  onChange={(e) => setNewExpense({ ...newExpense, expense_date: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">Category</Label>
+              <Select 
+                value={newExpense.category} 
+                onValueChange={(v) => setNewExpense({ ...newExpense, category: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="court_fee">Court Fee</SelectItem>
+                  <SelectItem value="travel">Travel</SelectItem>
+                  <SelectItem value="printing">Printing & Stationery</SelectItem>
+                  <SelectItem value="misc">Miscellaneous</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description (Optional)</Label>
+              <Textarea 
+                id="edit-description" 
+                placeholder="Additional details..." 
+                value={newExpense.description}
+                onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter className="pt-4">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button className="legal-gradient" onClick={handleUpdateExpense} disabled={saving}>
+              {saving ? 'Updating...' : 'Update Expense'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-    )
-  }
+  )
+} 

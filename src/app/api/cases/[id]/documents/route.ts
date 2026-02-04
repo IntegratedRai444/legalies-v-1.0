@@ -67,7 +67,7 @@ export async function POST(
   // Verify Case belongs to same firm
   const { data: caseRef } = await supabase
     .from('cases')
-    .select('id')
+    .select('id, court_city, court_state')
     .eq('id', id)
     .eq('firm_id', profile.firm_id)
     .single()
@@ -78,14 +78,39 @@ export async function POST(
 
   const body = await request.json()
 
+  // Validate file metadata
+  const { file_name, file_path, file_type, category } = body
+
+  if (!file_name || !file_path) {
+    return NextResponse.json({ error: 'File name and path are required' }, { status: 400 })
+  }
+
+  // Sanitize file name to prevent path traversal
+  const sanitizedName = file_name.replace(/[^a-zA-Z0-9.-_]/g, '_')
+  
+  // Validate file type
+  const allowedTypes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg',
+    'image/png'
+  ]
+
+  if (file_type && !allowedTypes.includes(file_type)) {
+    return NextResponse.json({ 
+      error: 'File type not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG' 
+    }, { status: 400 })
+  }
+
   const { data: document, error } = await supabase
     .from('case_documents')
     .insert({
       case_id: id,
-      title: body.file_name || body.title,
-      file_path: body.file_url || body.file_path,
-      file_type: body.file_type,
-      category: body.category || 'General',
+      title: sanitizedName,
+      file_path: file_path,
+      file_type: file_type,
+      category: category || 'General',
       uploaded_by: user.id
     })
     .select()
@@ -98,15 +123,16 @@ export async function POST(
   await logActivity(supabase, {
     case_id: id,
     user_id: user.id,
-    activity_type: 'document_uploaded',
-    description: `uploaded document "${body.file_name}"`,
+    activity_type: 'document_upload',
+    description: `uploaded document "${sanitizedName}"`,
+    metadata: { file_name: sanitizedName, file_type },
     firm_id: profile.firm_id
   })
 
   await notifyCaseParticipants(supabase, id, {
     exclude_user_id: user.id,
     title: 'New Document Uploaded',
-    content: `A new document "${body.file_name}" was uploaded to the case.`
+    content: `A new document "${sanitizedName}" was uploaded to the case.`
   })
 
   return NextResponse.json(document)

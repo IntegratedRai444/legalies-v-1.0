@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { format, addDays, startOfDay } from 'date-fns'
 
 export async function GET() {
   const supabase = await createServerSupabaseClient()
+  const serviceRoleSupabase = await createServiceRoleClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Fetch user profile to get firm_id
-  const { data: profile } = await supabase
+  // Check if user is Admin using Service Role to bypass RLS
+  const { data: profile } = await serviceRoleSupabase
     .from('profiles')
-    .select('firm_id')
+    .select('role, firm_id')
     .eq('id', user.id)
     .single()
 
@@ -24,10 +25,11 @@ export async function GET() {
   // Trigger automated reminder generation
   await checkReminders(user.id, profile.firm_id)
 
-  const { data: notifications, error } = await supabase
+  const { data: notifications, error } = await serviceRoleSupabase
     .from('notifications')
     .select('*')
     .eq('user_id', user.id)
+    .eq('firm_id', profile.firm_id)
     .order('created_at', { ascending: false })
     .limit(50)
 
@@ -40,6 +42,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   const supabase = await createServerSupabaseClient()
+  const serviceRoleSupabase = await createServiceRoleClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
@@ -48,11 +51,23 @@ export async function PATCH(request: NextRequest) {
 
   const { id, is_read, mark_all } = await request.json()
 
+  // Get user profile for firm_id using service role to bypass RLS
+  const { data: profile } = await serviceRoleSupabase
+    .from('profiles')
+    .select('firm_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.firm_id) {
+    return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+  }
+
   if (mark_all) {
-    const { error } = await supabase
+    const { error } = await serviceRoleSupabase
       .from('notifications')
       .update({ is_read: true })
       .eq('user_id', user.id)
+      .eq('firm_id', profile.firm_id)
       .eq('is_read', false)
 
     if (error) {
@@ -63,11 +78,12 @@ export async function PATCH(request: NextRequest) {
   }
 
   if (id) {
-    const { error } = await supabase
+    const { error } = await serviceRoleSupabase
       .from('notifications')
       .update({ is_read })
       .eq('id', id)
       .eq('user_id', user.id)
+      .eq('firm_id', profile.firm_id)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -90,7 +106,7 @@ async function checkReminders(userId: string, firmId: string) {
   // 1. Check for tomorrow's hearings - with firm isolation
   const { data: hearings } = await supabase
     .from('hearings')
-    .select('*, case:cases!inner(id, case_title, case_uid, firm_id)')
+    .select('*, case:cases!inner(id, case_title, case_uid, court_city, court_state, firm_id)')
     .eq('hearing_date', tomorrowStr)
     .eq('case.firm_id', firmId)
 
@@ -116,7 +132,8 @@ async function checkReminders(userId: string, firmId: string) {
           message: `Hearing tomorrow for ${h.case?.case_uid || 'Case'}. Purpose: ${h.purpose || h.hearing_type || 'General'}.`,
           type: 'warning',
           link: `/cases/${h.case_id}`,
-          is_read: false
+          is_read: false,
+          firm_id: firmId
         })
       }
     }
@@ -155,7 +172,8 @@ async function checkReminders(userId: string, firmId: string) {
           message,
           type: 'info',
           link: '/diary',
-          is_read: false
+          is_read: false,
+          firm_id: firmId
         })
       }
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/activity'
 import { notifyCaseParticipants } from '@/lib/notifications'
+import { successResponse, errorResponse } from '@/lib/api-response'
 
 export async function GET(
   request: NextRequest,
@@ -15,17 +16,32 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Fetch profile to get firm_id for security
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('firm_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.firm_id) {
+    return errorResponse('No firm associated', 403)
+  }
+
   const { data: hearings, error } = await supabase
     .from('hearings')
-    .select('*')
+    .select(`
+      *,
+      case:cases!inner(id, firm_id)
+    `)
     .eq('case_id', id)
+    .eq('case.firm_id', profile.firm_id)
     .order('hearing_date', { ascending: false })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return errorResponse(error.message, 500)
   }
 
-  return NextResponse.json(hearings)
+  return successResponse(hearings)
 }
 
 export async function POST(
@@ -62,7 +78,7 @@ export async function POST(
 
   if (hearingError) {
     console.error('Hearing Insert Error:', hearingError)
-    return NextResponse.json({ error: hearingError.message }, { status: 500 })
+    return errorResponse(hearingError.message, 500)
   }
 
   await logActivity(supabase, {
@@ -88,5 +104,5 @@ export async function POST(
       .eq('id', id)
   }
 
-  return NextResponse.json(hearing)
+  return successResponse(hearing)
 }

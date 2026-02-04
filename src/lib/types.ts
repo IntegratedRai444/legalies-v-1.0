@@ -207,6 +207,7 @@ export interface Notification {
   type: 'info' | 'warning' | 'success' | 'error' | string
   link: string | null
   related_case_id: string | null
+  firm_id: string | null
   created_at: string
 }
 

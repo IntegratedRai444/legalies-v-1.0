@@ -39,7 +39,7 @@ export async function GET() {
         .select(`
           id, hearing_date, court_room,
           case:cases!inner (
-            id, case_uid, case_title, court_name, status, firm_id,
+            id, case_uid, case_title, court_name, court_city, court_state, status, firm_id,
             assigned_lawyer:profiles!cases_assigned_lawyer_id_fkey(full_name)
           )
         `)
@@ -53,7 +53,7 @@ export async function GET() {
         .select(`
           id, hearing_date, court_room,
           case:cases!inner (
-            id, case_uid, case_title, court_name, status, firm_id,
+            id, case_uid, case_title, court_name, court_city, court_state, status, firm_id,
             assigned_lawyer:profiles!cases_assigned_lawyer_id_fkey(full_name)
           )
         `)
@@ -84,12 +84,12 @@ export async function GET() {
 
       supabase
         .from('cases')
-        .select('status')
+        .select('status, court_city, court_state')
         .eq('firm_id', firmId),
 
       supabase
         .from('cases')
-        .select('id, case_uid, case_title, status, last_updated_at')
+        .select('id, case_uid, case_title, status, last_updated_at, court_city, court_state')
         .eq('firm_id', firmId)
         .order('last_updated_at', { ascending: false })
         .limit(5)

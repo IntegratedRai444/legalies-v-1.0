@@ -35,7 +35,9 @@ export function NotificationBell() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch('/api/notifications')
+      const res = await fetch('/api/notifications', {
+        credentials: 'include'
+      })
       if (res.ok) {
         const data = await res.json()
         if (Array.isArray(data)) {
@@ -111,6 +113,7 @@ export function NotificationBell() {
       const res = await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ id, is_read: true }),
       })
       if (res.ok) {
@@ -129,6 +132,7 @@ export function NotificationBell() {
       const res = await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ mark_all: true }),
       })
       if (res.ok) {
@@ -201,7 +205,7 @@ export function NotificationBell() {
                     if (n.link) window.location.href = n.link
                   }}
                 >
-                  <div className="mt-1 flex-shrink-0">
+                  <div className="mt-1 shrink-0">
                     {getTypeIcon(n.type)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -209,7 +213,7 @@ export function NotificationBell() {
                       <p className={cn("text-sm font-semibold leading-tight", !n.is_read ? "text-foreground" : "text-muted-foreground")}>
                         {n.title}
                       </p>
-                      <div className="flex items-center gap-1 flex-shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         {!n.is_read && <div className="w-2 h-2 rounded-full bg-primary" />}
                       </div>
                     </div>

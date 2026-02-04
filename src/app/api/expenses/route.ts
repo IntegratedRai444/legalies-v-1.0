@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   // Verify case belongs to logged-in user or they are admin
   const { data: caseRecord } = await supabase
     .from('cases')
-    .select('id, created_by, assigned_lawyer_id')
+    .select('id, created_by, assigned_lawyer_id, court_city, court_state')
     .eq('id', caseId)
     .eq('firm_id', firmId)
     .single()
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
   // Verify Case Access
   const { data: caseRecord } = await supabase
     .from('cases')
-    .select('id, created_by, assigned_lawyer_id')
+    .select('id, created_by, assigned_lawyer_id, court_city, court_state')
     .eq('id', case_id)
     .single()
 

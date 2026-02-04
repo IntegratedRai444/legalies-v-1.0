@@ -57,7 +57,9 @@ export default function NotificationsPage() {
   const fetchNotifications = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/notifications')
+      const res = await fetch('/api/notifications', {
+        credentials: 'include'
+      })
       if (res.ok) {
         const data = await res.json()
         setNotifications(Array.isArray(data) ? data : [])
@@ -74,6 +76,7 @@ export default function NotificationsPage() {
       const res = await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ id, is_read: true }),
       })
       if (res.ok) {
@@ -91,6 +94,7 @@ export default function NotificationsPage() {
       const res = await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ mark_all: true }),
       })
       if (res.ok) {
@@ -174,7 +178,7 @@ export default function NotificationsPage() {
                     key={n.id}
                     className={cn(
                       "transition-all hover:shadow-md cursor-pointer border-none shadow-sm overflow-hidden group",
-                      !n.is_read ? "bg-gradient-to-r from-primary/5 to-transparent border-l-4 border-l-primary" : "bg-muted/30"
+                      !n.is_read ? "bg-linear-to-r from-primary/5 to-transparent border-l-4 border-l-primary" : "bg-muted/30"
                     )}
                     onClick={() => {
                       if (!n.is_read) markAsRead(n.id)

@@ -29,7 +29,24 @@ export async function GET(
     const { data: caseData, error } = await supabase
       .from('cases')
       .select(`
-        *,
+        id,
+        case_uid,
+        case_title,
+        court_name,
+        court_city,
+        court_state,
+        case_type,
+        status,
+        stage,
+        priority,
+        filing_date,
+        next_hearing_date,
+        assigned_lawyer_id,
+        created_by,
+        firm_id,
+        agreed_fee,
+        last_updated_at,
+        created_at,
         assigned_lawyer:profiles!cases_assigned_lawyer_id_fkey(id, full_name, phone, role),
         case_parties(
           id,
@@ -128,14 +145,56 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { clients, opponents, ...caseData } = body
+    const { clients, opponents, ...rawCaseData } = body
+
+    // Map frontend fields to database columns and filter out non-existent columns
+    const caseData = {
+      case_title: rawCaseData.case_title,
+      case_type: rawCaseData.case_type,
+      court_name: rawCaseData.court_name,
+      court_city: rawCaseData.court_city,
+      court_state: rawCaseData.court_state,
+      filing_date: rawCaseData.filing_date || null,
+      status: rawCaseData.status ? rawCaseData.status.toLowerCase() : undefined,
+      stage: rawCaseData.stage || undefined,
+      agreed_fee: rawCaseData.agreed_fee ? parseFloat(rawCaseData.agreed_fee) : null,
+      priority: rawCaseData.priority || undefined,
+      assigned_lawyer_id: rawCaseData.assigned_lawyer_id || undefined,
+      next_hearing_date: rawCaseData.next_hearing_date || undefined
+    }
+
+    // Remove undefined fields to avoid overwriting with null
+    Object.keys(caseData).forEach(key => {
+      if (caseData[key as keyof typeof caseData] === undefined) {
+        delete caseData[key as keyof typeof caseData]
+      }
+    })
 
     const { data: updatedCase, error } = await supabase
       .from('cases')
       .update(caseData)
       .eq('id', id)
       .eq('firm_id', profile.firm_id)
-      .select()
+      .select(`
+        id,
+        case_uid,
+        case_title,
+        court_name,
+        court_city,
+        court_state,
+        case_type,
+        status,
+        stage,
+        priority,
+        filing_date,
+        next_hearing_date,
+        assigned_lawyer_id,
+        created_by,
+        firm_id,
+        agreed_fee,
+        last_updated_at,
+        created_at
+      `)
       .single()
 
     if (error) {

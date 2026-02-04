@@ -8,7 +8,8 @@ export async function createNotification(
     content,
     type = 'info',
     link,
-    related_case_id
+    related_case_id,
+    firm_id
   }: {
     user_id: string
     title: string
@@ -16,6 +17,7 @@ export async function createNotification(
     type?: string
     link?: string
     related_case_id?: string
+    firm_id?: string
   }
 ) {
   const { error } = await supabase
@@ -27,7 +29,8 @@ export async function createNotification(
       is_read: false,
       type,
       link,
-      related_case_id
+      related_case_id,
+      firm_id
     })
 
   if (error) {
@@ -43,19 +46,21 @@ export async function notifyCaseParticipants(
     title,
     content,
     type = 'info',
-    link
+    link,
+    firm_id
   }: {
     exclude_user_id: string
     title: string
     content: string
     type?: string
     link?: string
+    firm_id?: string
   }
 ) {
   // Fetch assigned lawyer
   const { data: caseData } = await supabase
     .from('cases')
-    .select('assigned_lawyer_id, created_by')
+    .select('assigned_lawyer_id, created_by, court_city, court_state')
     .eq('id', case_id)
     .single()
 
@@ -81,7 +86,8 @@ export async function notifyCaseParticipants(
         content,
         type,
         link,
-        related_case_id: case_id
+        related_case_id: case_id,
+        firm_id
       })
     }
   }

@@ -39,7 +39,9 @@ export function CreateNoteModal({ open, onOpenChange, onSuccess, initialCaseId }
 
   const fetchCases = async () => {
     try {
-      const res = await fetch('/api/cases?status=Active')
+      const res = await fetch('/api/cases?status=Active', {
+        credentials: 'include'
+      })
       const data = await res.json()
       if (Array.isArray(data)) {
         setCases(data)
@@ -59,10 +61,11 @@ export function CreateNoteModal({ open, onOpenChange, onSuccess, initialCaseId }
     try {
       const res = await fetch('/api/diary', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          case_id: form.case_id || null
+          note_date: form.note_date || new Date().toISOString().split('T')[0]
         })
       })
 

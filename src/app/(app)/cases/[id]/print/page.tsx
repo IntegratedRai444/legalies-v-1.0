@@ -18,9 +18,9 @@ export default function CasePrintPage({ params }: { params: Promise<{ id: string
     async function loadData() {
       try {
         const [caseRes, hearingsRes, notesRes] = await Promise.all([
-          fetch(`/api/cases/${id}`).then(res => res.json()),
-          fetch(`/api/cases/${id}/hearings`).then(res => res.json()),
-          fetch(`/api/diary?case_id=${id}`).then(res => res.json())
+          fetch(`/api/cases/${id}`, { credentials: 'include' }).then(res => res.json()),
+          fetch(`/api/cases/${id}/hearings`, { credentials: 'include' }).then(res => res.json()),
+          fetch(`/api/diary?case_id=${id}`, { credentials: 'include' }).then(res => res.json())
         ])
 
         setCaseData(caseRes)

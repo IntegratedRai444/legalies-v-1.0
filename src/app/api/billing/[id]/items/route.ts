@@ -28,7 +28,7 @@ export async function GET(
 
   const { data: caseRecord } = await supabase
     .from('cases')
-    .select('id, created_by, assigned_lawyer_id')
+    .select('id, created_by, assigned_lawyer_id, court_city, court_state')
     .eq('id', invoice.case_id)
     .single()
 

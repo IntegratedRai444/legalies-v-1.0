@@ -29,7 +29,7 @@ export async function GET(
 
     const { data: task, error } = await supabase
       .from('tasks')
-      .select('*, case:cases!inner(id, case_title, case_uid, created_by, assigned_lawyer_id, firm_id)')
+      .select('*, case:cases!inner(id, case_title, case_uid, court_city, court_state, created_by, assigned_lawyer_id, firm_id)')
       .eq('id', id)
       .eq('case.firm_id', profile.firm_id)
       .single()

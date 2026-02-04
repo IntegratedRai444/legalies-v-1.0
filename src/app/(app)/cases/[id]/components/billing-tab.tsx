@@ -80,6 +80,7 @@ export function BillingTab({ caseData, onUpdate }: BillingTabProps) {
     try {
       const res = await fetch(`/api/cases/${caseData.id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agreed_fee: parseFloat(newFee) })
       })

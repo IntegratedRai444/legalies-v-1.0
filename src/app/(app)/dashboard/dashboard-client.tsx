@@ -112,7 +112,9 @@ export default function DashboardClient() {
 
   const fetchDashboard = async () => {
     try {
-      const res = await fetch('/api/dashboard')
+      const res = await fetch('/api/dashboard', {
+        credentials: 'include'
+      })
       const { data, error } = await res.json()
       if (error || !res.ok) {
         setData({
@@ -145,6 +147,7 @@ export default function DashboardClient() {
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       })

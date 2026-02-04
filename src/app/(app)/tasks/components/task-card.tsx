@@ -24,6 +24,7 @@ export function TaskCard({ task, onUpdate }: TaskCardProps) {
     try {
       const res = await fetch(`/api/tasks/${task.id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       })
@@ -44,7 +45,8 @@ export function TaskCard({ task, onUpdate }: TaskCardProps) {
     setLoading(true)
     try {
       const res = await fetch(`/api/tasks/${task.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
       if (res.ok) {
         toast.success('Task deleted')
@@ -57,11 +59,11 @@ export function TaskCard({ task, onUpdate }: TaskCardProps) {
     }
   }
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string | null) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-700'
       case 'medium': return 'bg-amber-100 text-amber-700'
-      case 'low': return 'bg-blue-100 text-blue-700'
+      case 'low': return 'bg-green-100 text-green-700'
       default: return 'bg-gray-100 text-gray-700'
     }
   }

@@ -3,7 +3,9 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "next dev --turbopack",
+        "dev": "next dev",
+        "dev:webpack": "set NEXT_DISABLE_TURBOPACK=1&& next dev",
+        "dev:turbopack": "next dev --turbopack",
         "build": "next build",
         "start": "next start",
         "lint": "next lint"
@@ -44,7 +46,7 @@
         "@react-three/drei": "^10.4.4",
         "@react-three/fiber": "^9.0.0-alpha.8",
         "@supabase/ssr": "^0.8.0",
-        "@supabase/supabase-js": "^2.90.1",
+        "@supabase/supabase-js": "^2.94.0",
         "@tabler/icons-react": "^3.35.0",
         "@tailwindcss/typography": "^0.5.19",
         "@tsparticles/engine": "^3.8.1",
@@ -60,7 +62,7 @@
         "cobe": "^0.6.5",
         "date-fns": "^4.1.0",
         "dotted-map": "^2.2.3",
-        "drizzle-kit": "^0.18.1",
+        "drizzle-kit": "^0.31.8",
         "drizzle-orm": "^0.44.7",
         "embla-carousel-auto-scroll": "^8.6.0",
         "embla-carousel-autoplay": "^8.6.0",
