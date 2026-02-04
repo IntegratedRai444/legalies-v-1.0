@@ -96,10 +96,15 @@ export async function POST(
     const body = await request.json()
 
     // Validate file metadata
-    const { file_name, file_path, file_type, category } = body
+    const { file_name, file_path, file_type, category, file_size } = body
 
     if (!file_name || !file_path) {
       return NextResponse.json({ success: false, error: 'File name and path are required' }, { status: 400 })
+    }
+
+    // File size limit (10MB)
+    if (file_size && file_size > 10 * 1024 * 1024) {
+      return NextResponse.json({ success: false, error: 'File size exceeds 10MB limit' }, { status: 400 })
     }
 
     // Sanitize file name to prevent path traversal
@@ -118,6 +123,16 @@ export async function POST(
       return NextResponse.json({ 
         success: false,
         error: 'File type not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG' 
+      }, { status: 400 })
+    }
+
+    // Validate file extension matches type
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
+    const fileExtension = file_name.toLowerCase().substring(file_name.lastIndexOf('.'))
+    if (!allowedExtensions.includes(fileExtension)) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'File extension not allowed. Allowed: .pdf, .doc, .docx, .jpg, .jpeg, .png' 
       }, { status: 400 })
     }
 

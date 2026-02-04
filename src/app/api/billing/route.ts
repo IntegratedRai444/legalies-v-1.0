@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/activity'
 import { successResponse, errorResponse } from '@/lib/api-response'
@@ -86,6 +86,28 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { items, ...invoiceData } = body
+
+    // Validation
+    if (!invoiceData.client_id || typeof invoiceData.client_id !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid client ID" }, { status: 400 })
+    }
+    if (!invoiceData.case_id || typeof invoiceData.case_id !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid case ID" }, { status: 400 })
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ success: false, error: "Invoice must have at least one item" }, { status: 400 })
+    }
+    for (const item of items) {
+      if (!item.description || typeof item.description !== "string") {
+        return NextResponse.json({ success: false, error: "Invalid item description" }, { status: 400 })
+      }
+      if (!item.quantity || isNaN(parseFloat(item.quantity)) || parseFloat(item.quantity) <= 0) {
+        return NextResponse.json({ success: false, error: "Invalid item quantity" }, { status: 400 })
+      }
+      if (!item.unit_price || isNaN(parseFloat(item.unit_price)) || parseFloat(item.unit_price) < 0) {
+        return NextResponse.json({ success: false, error: "Invalid item unit price" }, { status: 400 })
+      }
+    }
 
     let success = false
     let attempts = 0

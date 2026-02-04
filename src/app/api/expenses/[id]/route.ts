@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/activity'
-const normalize = (v?: string) => v?.toLowerCase().trim()
+import { normalizeRole } from '@/lib/utils'
 
 export async function PATCH(
   request: NextRequest,
@@ -48,7 +48,7 @@ export async function PATCH(
     }
 
     // Ownership check - only creator or admin can edit
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const isOwner = existingExpense.added_by === user.id
 
     if (!isOwner && !isAdmin) {
@@ -147,7 +147,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Expense not found or access denied' }, { status: 404 })
     }
 
-    const isAdmin = normalize(profile?.role || '') === 'admin'
+    const isAdmin = normalizeRole(profile?.role || '') === 'admin'
     const isOwner = expense.added_by === user.id
 
     if (!isOwner && !isAdmin) {

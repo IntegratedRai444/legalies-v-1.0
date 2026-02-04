@@ -81,6 +81,23 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
+    // Validation
+    if (!body.note_text || typeof body.note_text !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid note text" }, { status: 400 })
+    }
+    if (body.note_text.length < 3 || body.note_text.length > 2000) {
+      return NextResponse.json({ success: false, error: "Note text must be 3-2000 characters" }, { status: 400 })
+    }
+    if (!body.note_date || typeof body.note_date !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid note date" }, { status: 400 })
+    }
+    if (isNaN(Date.parse(body.note_date))) {
+      return NextResponse.json({ success: false, error: "Invalid note date format" }, { status: 400 })
+    }
+    if (body.priority && !['low', 'medium', 'high'].includes(body.priority)) {
+      return NextResponse.json({ success: false, error: "Invalid priority level" }, { status: 400 })
+    }
+
     // Verify Case ownership if case_id is provided
     if (body.case_id) {
       const { data: caseRef } = await supabase

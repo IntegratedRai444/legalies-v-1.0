@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { successResponse, errorResponse } from '@/lib/api-response'
 
@@ -62,6 +62,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+
+    // Validation
+    if (!body.title || typeof body.title !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid task title" }, { status: 400 })
+    }
+    if (body.title.length < 3 || body.title.length > 200) {
+      return NextResponse.json({ success: false, error: "Task title must be 3-200 characters" }, { status: 400 })
+    }
+    if (body.priority && !['low', 'medium', 'high'].includes(body.priority)) {
+      return NextResponse.json({ success: false, error: "Invalid priority level" }, { status: 400 })
+    }
+    if (body.status && !['pending', 'in_progress', 'completed'].includes(body.status)) {
+      return NextResponse.json({ success: false, error: "Invalid status" }, { status: 400 })
+    }
 
     // Fetch profile to get firm_id
     const { data: profile } = await supabase

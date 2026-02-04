@@ -3,8 +3,6 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/activity'
 import { normalizeRole } from '@/lib/utils'
 
-const normalize = (v?: string) => v?.toLowerCase().trim()
-
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string, messageId: string }> }
@@ -46,7 +44,7 @@ export async function PATCH(
     }
 
     // Ownership check - only sender or admin can edit
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const isSender = existingMessage.sender_id === user.id
 
     if (!isSender && !isAdmin) {
@@ -137,7 +135,7 @@ export async function DELETE(
     }
 
     // Ownership check - only sender or admin can delete
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const isSender = existingMessage.sender_id === user.id
 
     if (!isSender && !isAdmin) {

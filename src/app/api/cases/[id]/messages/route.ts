@@ -80,8 +80,12 @@ export async function POST(
     const body = await request.json()
     const { message } = body
 
-    if (!message || message.trim() === '') {
-      return NextResponse.json({ success: false, error: 'Message content is required' }, { status: 400 })
+    // Validation
+    if (!message || typeof message !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid message content" }, { status: 400 })
+    }
+    if (message.trim().length < 1 || message.length > 1000) {
+      return NextResponse.json({ success: false, error: "Message must be 1-1000 characters" }, { status: 400 })
     }
 
     // Verify case belongs to user's firm

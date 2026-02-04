@@ -74,6 +74,20 @@ export async function POST(
 
     const body = await request.json()
 
+    // Validation
+    if (!body.hearing_date || typeof body.hearing_date !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid hearing date" }, { status: 400 })
+    }
+    if (isNaN(Date.parse(body.hearing_date))) {
+      return NextResponse.json({ success: false, error: "Invalid hearing date format" }, { status: 400 })
+    }
+    if (body.hearing_type && typeof body.hearing_type !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid hearing type" }, { status: 400 })
+    }
+    if (body.court_room && typeof body.court_room !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid court room" }, { status: 400 })
+    }
+
     const { data: hearing, error: hearingError } = await supabase
       .from('hearings')
       .insert({

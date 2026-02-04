@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-
-const normalize = (v?: string) => v?.toLowerCase().trim()
+import { normalizeRole } from '@/lib/utils'
 
 export async function PATCH(
   request: NextRequest,
@@ -38,7 +37,7 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Note not found or access denied' }, { status: 404 })
     }
 
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const isOwner = existingNote.lawyer_id === user.id
 
     if (!isOwner && !isAdmin) {
@@ -102,7 +101,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Note not found or access denied' }, { status: 404 })
     }
 
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const isOwner = existingNote.lawyer_id === user.id
 
     if (!isOwner && !isAdmin) {

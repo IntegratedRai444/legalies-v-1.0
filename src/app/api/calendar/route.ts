@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       })),
       ...diaryNotes.map(d => ({
         id: d.id,
-        type: 'task', // Treating diary notes as tasks/reminders on calendar
+        type: 'diary', // Fixed: diary notes should be type 'diary', not 'task'
         title: `Note: ${d.note_text}`,
         date: d.note_date,
         priority: d.priority,

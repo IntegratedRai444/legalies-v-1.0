@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { successResponse, errorResponse } from '@/lib/api-response'
-
-const normalize = (v?: string) => v?.toLowerCase().trim()
+import { normalizeRole } from '@/lib/utils'
 
 export async function GET(
   request: NextRequest,
@@ -42,7 +41,7 @@ export async function GET(
       return errorResponse('Task not found or access denied', 404)
     }
 
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const isOwnerOrAssigned = task.created_by === user.id || task.assigned_to === user.id ||
       task.case?.created_by === user.id || task.case?.assigned_lawyer_id === user.id
 
@@ -91,7 +90,7 @@ export async function PATCH(
       return errorResponse('Task not found or access denied', 404)
     }
 
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const hasAccess = task.created_by === user.id || task.assigned_to === user.id || isAdmin
 
     if (!hasAccess) {
@@ -151,7 +150,7 @@ export async function DELETE(
       return errorResponse('Task not found or access denied', 404)
     }
 
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const hasAccess = task.created_by === user.id || task.assigned_to === user.id || isAdmin
 
     if (!hasAccess) {

@@ -120,14 +120,77 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
 
   useEffect(() => {
-    fetchCase()
-    fetchHearings()
-    fetchDocuments()
-    fetchDiaryNotes()
-    fetchTasks()
-    fetchMessages()
-    fetchRole()
-    fetchAdvocates()
+    const fetchAllData = async () => {
+      try {
+        // Parallel fetch all data
+        const [
+          caseResult,
+          hearingsResult,
+          documentsResult,
+          diaryNotesResult,
+          tasksResult,
+          messagesResult
+        ] = await Promise.all([
+          fetch(`/api/cases/${id}`, { credentials: 'include' }),
+          fetch(`/api/cases/${id}/hearings`, { credentials: 'include' }),
+          fetch(`/api/cases/${id}/documents`, { credentials: 'include' }),
+          fetch(`/api/diary?case_id=${id}`, { credentials: 'include' }),
+          fetch(`/api/tasks?caseId=${id}`, { credentials: 'include' }),
+          fetch(`/api/cases/${id}/messages`, { credentials: 'include' })
+        ])
+
+        // Process case data
+        const caseText = await caseResult.text()
+        const caseData = caseText ? JSON.parse(caseText) : null
+        if (caseData?.success && caseData.data) {
+          setCaseData(caseData.data)
+          setEditForm({
+            case_title: caseData.data.case_title,
+            case_type: caseData.data.case_type || '',
+            court_name: caseData.data.court_name || '',
+            court_city: caseData.data.court_city || '',
+            court_state: caseData.data.court_state || '',
+            status: caseData.data.status,
+            stage: caseData.data.stage,
+            priority: caseData.data.priority || 'Routine',
+            next_hearing_date: caseData.data.next_hearing_date || '',
+            agreed_fee: caseData.data.agreed_fee?.toString() || '',
+            assigned_lawyer_id: caseData.data.assigned_lawyer_id || ''
+          })
+        }
+
+        // Process other data
+        const hearingsText = await hearingsResult.text()
+        const hearingsData = hearingsText ? JSON.parse(hearingsText) : null
+        setHearings(hearingsData?.success && Array.isArray(hearingsData.data) ? hearingsData.data : [])
+
+        const documentsText = await documentsResult.text()
+        const documentsData = documentsText ? JSON.parse(documentsText) : null
+        setDocuments(documentsData?.success && Array.isArray(documentsData.data) ? documentsData.data : [])
+
+        const diaryNotesText = await diaryNotesResult.text()
+        const diaryNotesData = diaryNotesText ? JSON.parse(diaryNotesText) : null
+        setDiaryNotes(diaryNotesData?.success && Array.isArray(diaryNotesData.data) ? diaryNotesData.data : [])
+
+        const tasksText = await tasksResult.text()
+        const tasksData = tasksText ? JSON.parse(tasksText) : null
+        setTasks(tasksData?.success && Array.isArray(tasksData.data) ? tasksData.data : [])
+
+        const messagesText = await messagesResult.text()
+        const messagesData = messagesText ? JSON.parse(messagesText) : null
+        setMessages(messagesData?.success && Array.isArray(messagesData.data) ? messagesData.data : [])
+
+        // Fetch role and advocates (can be done in parallel too)
+        await Promise.all([fetchRole(), fetchAdvocates()])
+      } catch (error) {
+        console.error('Error fetching case data:', error)
+        toast.error('Failed to load case data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAllData()
   }, [id])
 
   const fetchRole = async () => {

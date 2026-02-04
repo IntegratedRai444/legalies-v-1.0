@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/activity'
-
-const normalize = (v?: string) => v?.toLowerCase().trim()
+import { normalizeRole } from '@/lib/utils'
 
 export async function PATCH(
   request: NextRequest,
@@ -25,7 +24,7 @@ export async function PATCH(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
     }
 
     // Permission check and Firm Isolation
@@ -37,14 +36,14 @@ export async function PATCH(
       .single()
 
     if (!caseData) {
-      return NextResponse.json({ error: 'Case not found or access denied' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Case not found or access denied' }, { status: 404 })
     }
 
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const isAssigned = caseData.assigned_lawyer_id === user.id
 
     if (!isAdmin && !isAssigned) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -130,7 +129,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Case not found or access denied' }, { status: 404 })
     }
 
-    const isAdmin = normalize(profile.role) === 'admin'
+    const isAdmin = normalizeRole(profile.role) === 'admin'
     const isAssigned = caseData.assigned_lawyer_id === user.id
 
     if (!isAdmin && !isAssigned) {

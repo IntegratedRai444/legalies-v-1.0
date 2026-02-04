@@ -154,6 +154,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { clients, opponents, ...rawCaseData } = body
 
+    // Validation
+    if (!rawCaseData.case_title || typeof rawCaseData.case_title !== "string") {
+      return NextResponse.json({ success: false, error: "Invalid case title" }, { status: 400 })
+    }
+    if (rawCaseData.case_title.length < 3 || rawCaseData.case_title.length > 200) {
+      return NextResponse.json({ success: false, error: "Case title must be 3-200 characters" }, { status: 400 })
+    }
+    if (rawCaseData.agreed_fee && (isNaN(parseFloat(rawCaseData.agreed_fee)) || parseFloat(rawCaseData.agreed_fee) < 0)) {
+      return NextResponse.json({ success: false, error: "Invalid agreed fee amount" }, { status: 400 })
+    }
+    if (rawCaseData.priority && !['Routine', 'Urgent', 'High'].includes(rawCaseData.priority)) {
+      return NextResponse.json({ success: false, error: "Invalid priority level" }, { status: 400 })
+    }
+
     // Map frontend fields to database columns and filter out non-existent columns
     const caseData = {
       case_title: rawCaseData.case_title,
