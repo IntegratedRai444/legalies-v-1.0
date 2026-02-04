@@ -63,7 +63,7 @@ export function NotificationBell() {
   useEffect(() => {
     fetchNotifications()
 
-    // Subscribe to real-time notifications
+    // Subscribe to real-time notifications with error handling
     const channel = supabase
       .channel('notifications_changes')
       .on(
@@ -74,16 +74,20 @@ export function NotificationBell() {
           table: 'notifications',
         },
         (payload) => {
-          const newNotification = payload.new as Notification
-          // Show toast for new notification
-          toast(newNotification.title, {
-            description: newNotification.message,
-            action: newNotification.link ? {
-              label: 'View',
-              onClick: () => window.location.href = newNotification.link!
-            } : undefined
-          })
-          fetchNotifications()
+          try {
+            const newNotification = payload.new as Notification
+            // Show toast for new notification
+            toast(newNotification.title, {
+              description: newNotification.message,
+              action: newNotification.link ? {
+                label: 'View',
+                onClick: () => window.location.href = newNotification.link!
+              } : undefined
+            })
+            fetchNotifications()
+          } catch (err) {
+            console.error('Error handling realtime notification:', err)
+          }
         }
       )
       .on(
@@ -94,7 +98,11 @@ export function NotificationBell() {
           table: 'notifications',
         },
         () => {
-          fetchNotifications()
+          try {
+            fetchNotifications()
+          } catch (err) {
+            console.error('Error handling realtime notification update:', err)
+          }
         }
       )
       .on(
@@ -105,10 +113,26 @@ export function NotificationBell() {
           table: 'notifications',
         },
         () => {
-          fetchNotifications()
+          try {
+            fetchNotifications()
+          } catch (err) {
+            console.error('Error handling realtime notification delete:', err)
+          }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime notifications subscribed')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.warn('Realtime notifications channel error - falling back to polling')
+          // Fallback to polling if realtime fails
+          const interval = setInterval(fetchNotifications, 30000) // Poll every 30 seconds
+          return () => {
+            clearInterval(interval)
+            supabase.removeChannel(channel)
+          }
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)

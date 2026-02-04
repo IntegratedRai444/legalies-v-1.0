@@ -42,11 +42,19 @@ export function GlobalSearch() {
       setLoading(true)
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
-        const data = await res.json()
-        setResults(data)
+        
+        if (!res.ok) {
+          throw new Error(`API Error: ${res.status}`)
+        }
+
+        const text = await res.text()
+        const data = text ? JSON.parse(text) : null
+        
+        setResults(data?.data || [])
         setIsOpen(true)
       } catch (error) {
         console.error('Search error:', error)
+        setResults([])
       } finally {
         setLoading(false)
       }

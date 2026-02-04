@@ -45,9 +45,18 @@ export function CreateHearingModal({ open, onOpenChange, onSuccess, initialCaseI
       const res = await fetch('/api/cases?status=Active', {
         credentials: 'include'
       })
-      const data = await res.json()
-      if (Array.isArray(data)) {
-        setCases(data)
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.success && Array.isArray(data.data)) {
+        setCases(data.data)
+      } else {
+        setCases([])
       }
     } catch {
       console.error('Failed to fetch cases')

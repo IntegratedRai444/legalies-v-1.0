@@ -24,13 +24,25 @@ export default function TasksPage() {
   const fetchTasks = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/tasks')
-      const { data, error } = await res.json()
-      if (!error && res.ok) {
-        setTasks(data || [])
+      const res = await fetch('/api/tasks', {
+        credentials: 'include'
+      })
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.success && Array.isArray(data.data)) {
+        setTasks(data.data)
+      } else {
+        setTasks([])
       }
     } catch (error) {
       console.error('Failed to fetch tasks:', error)
+      setTasks([])
     } finally {
       setLoading(false)
     }

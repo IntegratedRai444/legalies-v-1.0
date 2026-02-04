@@ -20,7 +20,10 @@ export async function POST(req: Request) {
     })
 
     if (authError) {
-      return new Response(JSON.stringify({ error: authError.message }), { status: 400 })
+      return new Response(JSON.stringify({ success: false, error: authError.message }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
 
     if (authData.user) {
@@ -40,7 +43,10 @@ export async function POST(req: Request) {
 
       if (firmError) {
         console.error('Firm creation error:', firmError)
-        return new Response(JSON.stringify({ error: 'Failed to create firm' }), { status: 500 })
+        return new Response(JSON.stringify({ success: false, error: 'Failed to create firm' }), { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        })
       }
 
       // 4. Create profile WITH firm_id and role=advocate
@@ -55,13 +61,22 @@ export async function POST(req: Request) {
 
       if (profileError) {
         console.error('Profile creation error:', profileError)
-        return new Response(JSON.stringify({ error: 'Failed to create profile' }), { status: 500 })
+        return new Response(JSON.stringify({ success: false, error: 'Failed to create profile' }), { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        })
       }
     }
 
-    return new Response(JSON.stringify({ success: true, user: authData.user }), { status: 200 })
+    return new Response(JSON.stringify({ success: true, data: { user: authData.user } }), { 
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    })
   } catch (err: any) {
     console.error('Registration error:', err)
-    return new Response(JSON.stringify({ error: err.message || 'Internal Server Error' }), { status: 500 })
+    return new Response(JSON.stringify({ success: false, error: err.message || 'Internal Server Error' }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 }

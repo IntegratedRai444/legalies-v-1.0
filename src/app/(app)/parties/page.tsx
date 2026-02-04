@@ -65,14 +65,26 @@ export default function PartiesPage() {
 
   const fetchParties = async () => {
     try {
-      const res = await fetch('/api/parties')
-      const data = await res.json()
-      if (Array.isArray(data)) {
-        setParties(data)
+      const res = await fetch('/api/parties', {
+        credentials: 'include'
+      })
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.success && Array.isArray(data.data)) {
+        setParties(data.data)
+      } else {
+        setParties([])
       }
     } catch (error) {
       console.error('Error fetching parties:', error)
       toast.error("Failed to load parties")
+      setParties([])
     } finally {
       setLoading(false)
     }

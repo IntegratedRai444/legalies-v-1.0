@@ -33,13 +33,14 @@ export default function RegisterPage() {
           body: JSON.stringify({ email, password, fullName, phone }),
         })
 
-      const data = await res.json()
+        const text = await res.text()
+        const data = text ? JSON.parse(text) : null
 
-      if (!res.ok) {
-        toast.error(data.error || 'Registration failed')
-        setLoading(false)
-        return
-      }
+        if (!res.ok) {
+          toast.error(data?.error || 'Registration failed')
+          setLoading(false)
+          return
+        }
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,

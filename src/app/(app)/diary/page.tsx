@@ -34,12 +34,21 @@ export default function DiaryPage() {
     const end = format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'yyyy-MM-dd')
 
     try {
-      const res = await fetch(`/api/diary?start_date=${start}&end_date=${end}`)
-      const data = await res.json()
-      if (data.error || !Array.isArray(data)) {
+      const res = await fetch(`/api/diary?start_date=${start}&end_date=${end}`, {
+        credentials: 'include'
+      })
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.error || !Array.isArray(data?.data)) {
         setNotes([])
       } else {
-        setNotes(data)
+        setNotes(data.data)
       }
     } catch {
       toast.error('Failed to load journal')
@@ -51,12 +60,21 @@ export default function DiaryPage() {
 
   const fetchCases = async () => {
     try {
-      const res = await fetch('/api/cases?status=Active')
-      const data = await res.json()
-      if (data.error || !Array.isArray(data)) {
+      const res = await fetch('/api/cases?status=Active', {
+        credentials: 'include'
+      })
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.error || !Array.isArray(data?.data)) {
         setCases([])
       } else {
-        setCases(data.map((c: { id: string; case_uid: string; case_title: string }) => ({
+        setCases(data.data.map((c: { id: string; case_uid: string; case_title: string }) => ({
           id: c.id,
           case_uid: c.case_uid,
           case_title: c.case_title
@@ -64,6 +82,7 @@ export default function DiaryPage() {
       }
     } catch {
       console.error('Failed to fetch cases')
+      setCases([])
     }
   }
 

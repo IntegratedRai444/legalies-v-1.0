@@ -31,7 +31,7 @@ export default function NotificationsPage() {
   useEffect(() => {
     fetchNotifications()
 
-    // Subscribe to real-time notifications
+    // Subscribe to real-time notifications with error handling
     const channel = supabase
       .channel('notifications-realtime')
       .on(
@@ -42,12 +42,28 @@ export default function NotificationsPage() {
           table: 'notifications',
         },
         (payload) => {
-          const newNotification = payload.new as Notification
-          setNotifications((prev) => [newNotification, ...prev])
-          toast.info(`New notification: ${newNotification.title}`)
+          try {
+            const newNotification = payload.new as Notification
+            setNotifications((prev) => [newNotification, ...prev])
+            toast.info(`New notification: ${newNotification.title}`)
+          } catch (err) {
+            console.error('Error handling realtime notification:', err)
+          }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime notifications subscribed')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.warn('Realtime notifications channel error - falling back to polling')
+          // Fallback to polling if realtime fails
+          const interval = setInterval(fetchNotifications, 30000) // Poll every 30 seconds
+          return () => {
+            clearInterval(interval)
+            supabase.removeChannel(channel)
+          }
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)

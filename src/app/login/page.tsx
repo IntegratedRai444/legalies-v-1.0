@@ -31,11 +31,12 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
 
-      const data = await response.json()
+      const text = await response.text()
+      const data = text ? JSON.parse(text) : null
       console.log('Login response:', response.status, data)
 
       if (!response.ok) {
-        toast.error(data.error || 'Login failed')
+        toast.error(data?.error || 'Login failed')
         setIsPending(false)
         return
       }

@@ -140,7 +140,7 @@ function CasesContent() {
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Users className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                             <span className="truncate">
-                              {c.clients.map(cl => cl.party?.name).join(', ')}
+                              {c.clients?.map(cl => cl.party?.name || 'Unknown').filter(Boolean).join(', ') || 'No clients'}
                             </span>
                           </div>
                         )}
