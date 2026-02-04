@@ -20,7 +20,8 @@ export async function GET() {
       .single()
 
     if (!profile?.firm_id) {
-      return errorResponse('No firm associated', 403)
+      console.warn('User has no firm_id associated:', user.id)
+      return successResponse({ stats: [], recentActivity: [] }) // Return empty dashboard for users without firm
     }
 
     const firmId = profile.firm_id

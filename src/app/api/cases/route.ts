@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!profile?.firm_id) {
-      return errorResponse('No firm associated', 403)
+      console.warn('User has no firm_id associated:', user.id)
+      return successResponse([]) // Return empty cases for users without firm
     }
 
     let query = supabase
