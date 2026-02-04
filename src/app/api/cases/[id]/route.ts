@@ -28,7 +28,8 @@ export async function GET(
       .single()
 
     if (!profile?.firm_id) {
-      return errorResponse('No firm associated', 403)
+      console.warn('User has no firm_id associated:', user.id)
+      return successResponse(null) // Return null for users without firm
     }
 
     const { data: caseData, error } = await supabase
@@ -146,7 +147,8 @@ export async function PATCH(
       .single()
 
     if (!profile?.firm_id) {
-      return errorResponse('No firm associated', 403)
+      console.warn('User has no firm_id associated:', user.id)
+      return successResponse(null) // Return null for users without firm
     }
 
     const body = await request.json()
@@ -245,7 +247,8 @@ export async function DELETE(
       .single()
 
     if (!profile?.firm_id) {
-      return errorResponse('No firm associated', 403)
+      console.warn('User has no firm_id associated:', user.id)
+      return successResponse(null) // Return null for users without firm
     }
 
     // Ensure case belongs to user's firm
