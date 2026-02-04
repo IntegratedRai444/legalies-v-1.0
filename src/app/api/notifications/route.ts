@@ -6,9 +6,9 @@ export async function GET() {
   try {
     const supabase = await createServerSupabaseClient()
     const serviceRoleSupabase = await createServiceRoleClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -47,58 +47,62 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
-  const supabase = await createServerSupabaseClient()
-  const serviceRoleSupabase = await createServiceRoleClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    const supabase = await createServerSupabaseClient()
+    const serviceRoleSupabase = await createServiceRoleClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { id, is_read, mark_all } = await request.json()
-
-  // Get user profile for firm_id using service role to bypass RLS
-  const { data: profile } = await serviceRoleSupabase
-    .from('profiles')
-    .select('firm_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.firm_id) {
-    return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
-  }
-
-  if (mark_all) {
-    const { error } = await serviceRoleSupabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('firm_id', profile.firm_id)
-      .eq('is_read', false)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    return NextResponse.json({ success: true })
-  }
+    const { data: profile } = await serviceRoleSupabase
+      .from('profiles')
+      .select('firm_id')
+      .eq('id', user.id)
+      .single()
 
-  if (id) {
-    const { error } = await serviceRoleSupabase
-      .from('notifications')
-      .update({ is_read })
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .eq('firm_id', profile.firm_id)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!profile?.firm_id) {
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
     }
 
-    return NextResponse.json({ success: true })
-  }
+    const { id, is_read, mark_all } = await request.json()
 
-  return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    if (mark_all) {
+      const { error } = await serviceRoleSupabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('firm_id', profile.firm_id)
+        .eq('is_read', false)
+
+      if (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    if (id) {
+      const { error } = await serviceRoleSupabase
+        .from('notifications')
+        .update({ is_read })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .eq('firm_id', profile.firm_id)
+
+      if (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    return NextResponse.json({ success: false, error: 'Invalid request' }, { status: 400 })
+  } catch (err: any) {
+    console.error("Notifications PATCH error:", err)
+    return NextResponse.json({ success: false, error: 'Failed to update notifications' }, { status: 500 })
+  }
 }
 
 async function checkReminders(userId: string, firmId: string) {

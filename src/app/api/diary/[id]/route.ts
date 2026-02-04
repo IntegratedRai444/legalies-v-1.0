@@ -10,10 +10,10 @@ export async function PATCH(
   try {
     const { id } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: profile } = await supabase
@@ -23,7 +23,7 @@ export async function PATCH(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
     }
 
     // Verify ownership and firm isolation
@@ -35,14 +35,14 @@ export async function PATCH(
       .single()
 
     if (!existingNote) {
-      return NextResponse.json({ error: 'Note not found or access denied' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Note not found or access denied' }, { status: 404 })
     }
 
     const isAdmin = normalize(profile.role) === 'admin'
     const isOwner = existingNote.lawyer_id === user.id
 
     if (!isOwner && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -58,12 +58,12 @@ export async function PATCH(
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(note)
+    return NextResponse.json({ success: true, data: note })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ success: false, error: err.message || 'Internal Server Error' }, { status: 500 })
   }
 }
 
@@ -74,10 +74,10 @@ export async function DELETE(
   try {
     const { id } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: profile } = await supabase
@@ -87,7 +87,7 @@ export async function DELETE(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
     }
 
     // Verify ownership and firm isolation
@@ -99,14 +99,14 @@ export async function DELETE(
       .single()
 
     if (!existingNote) {
-      return NextResponse.json({ error: 'Note not found or access denied' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Note not found or access denied' }, { status: 404 })
     }
 
     const isAdmin = normalize(profile.role) === 'admin'
     const isOwner = existingNote.lawyer_id === user.id
 
     if (!isOwner && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
 
     const { error } = await supabase
@@ -115,11 +115,11 @@ export async function DELETE(
       .eq('id', id)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ success: false, error: err.message || 'Internal Server Error' }, { status: 500 })
   }
 }

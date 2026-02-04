@@ -194,23 +194,25 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       }
 
       const text = await res.text()
-      const data = text ? JSON.parse(text) : null
+      const result = text ? JSON.parse(text) : null
       
-      setCaseData(data)
-      if (data) {
+      if (result?.success && result.data) {
+        setCaseData(result.data)
         setEditForm({
-          case_title: data.case_title,
-          case_type: data.case_type || '',
-          court_name: data.court_name || '',
-          court_city: data.court_city || '',
-          court_state: data.court_state || '',
-          status: data.status,
-          stage: data.stage,
-          priority: data.priority || 'Routine',
-          next_hearing_date: data.next_hearing_date || '',
-          agreed_fee: data.agreed_fee?.toString() || '',
-          assigned_lawyer_id: data.assigned_lawyer_id || ''
+          case_title: result.data.case_title,
+          case_type: result.data.case_type || '',
+          court_name: result.data.court_name || '',
+          court_city: result.data.court_city || '',
+          court_state: result.data.court_state || '',
+          status: result.data.status,
+          stage: result.data.stage,
+          priority: result.data.priority || 'Routine',
+          next_hearing_date: result.data.next_hearing_date || '',
+          agreed_fee: result.data.agreed_fee?.toString() || '',
+          assigned_lawyer_id: result.data.assigned_lawyer_id || ''
         })
+      } else {
+        throw new Error(result?.error || 'Failed to load case data')
       }
     } catch {
       toast.error('Failed to load case')
@@ -230,12 +232,12 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       }
 
       const text = await res.text()
-      const data = text ? JSON.parse(text) : null
+      const result = text ? JSON.parse(text) : null
       
-      if (data?.error || !Array.isArray(data)) {
-        setHearings([])
+      if (result?.success && Array.isArray(result.data)) {
+        setHearings(result.data)
       } else {
-        setHearings(data)
+        setHearings([])
       }
     } catch {
       console.error('Failed to load hearings')
@@ -254,12 +256,12 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       }
 
       const text = await res.text()
-      const data = text ? JSON.parse(text) : null
+      const result = text ? JSON.parse(text) : null
       
-      if (data?.error || !Array.isArray(data?.data)) {
-        setDocuments([])
+      if (result?.success && Array.isArray(result.data)) {
+        setDocuments(result.data)
       } else {
-        setDocuments(data.data)
+        setDocuments([])
       }
     } catch {
       console.error('Failed to load documents')
@@ -278,12 +280,12 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       }
 
       const text = await res.text()
-      const data = text ? JSON.parse(text) : null
+      const result = text ? JSON.parse(text) : null
       
-      if (data?.error || !Array.isArray(data?.data)) {
-        setDiaryNotes([])
+      if (result?.success && Array.isArray(result.data)) {
+        setDiaryNotes(result.data)
       } else {
-        setDiaryNotes(data.data)
+        setDiaryNotes([])
       }
     } catch {
       console.error('Failed to load diary notes')
@@ -302,10 +304,10 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       }
 
       const text = await res.text()
-      const data = text ? JSON.parse(text) : null
+      const result = text ? JSON.parse(text) : null
       
-      if (Array.isArray(data?.data)) {
-        setTasks(data.data)
+      if (result?.success && Array.isArray(result.data)) {
+        setTasks(result.data)
       } else {
         setTasks([])
       }
@@ -326,12 +328,12 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       }
 
       const text = await res.text()
-      const data = text ? JSON.parse(text) : null
+      const result = text ? JSON.parse(text) : null
       
-      if (data?.error || !Array.isArray(data?.data)) {
-        setMessages([])
+      if (result?.success && Array.isArray(result.data)) {
+        setMessages(result.data)
       } else {
-        setMessages(data.data)
+        setMessages([])
       }
     } catch {
       console.error('Failed to load messages')
@@ -777,6 +779,37 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const nextAction = getNextAction()
+
+  if (loading) {
+    return (
+      <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="h-64 bg-muted rounded-2xl"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="h-96 bg-muted rounded-2xl"></div>
+            <div className="h-96 bg-muted rounded-2xl"></div>
+            <div className="h-96 bg-muted rounded-2xl"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!caseData) {
+    return (
+      <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+        <div className="text-center py-20">
+          <h2 className="text-2xl font-bold mb-4">Case not found</h2>
+          <p className="text-muted-foreground mb-6">The case you're looking for doesn't exist or you don't have access to it.</p>
+          <Button onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Cases
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
