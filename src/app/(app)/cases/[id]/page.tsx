@@ -670,6 +670,31 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     setNewHearing({ ...newHearing, outcome: template })
   }
 
+  const handleDeleteCase = async () => {
+    if (!confirm("Are you sure you want to delete this case? This action cannot be undone and will delete all related data including documents, hearings, tasks, and notes.")) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/cases/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        const error = text ? JSON.parse(text) : null
+        toast.error(error?.error || 'Failed to delete case')
+        return
+      }
+
+      toast.success('Case deleted successfully')
+      router.push('/dashboard/cases')
+    } catch {
+      toast.error('Failed to delete case')
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-6 lg:p-8">
@@ -771,6 +796,10 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)} className="h-9 px-4">
             <Pencil className="w-4 h-4 mr-2" />
             Edit
+          </Button>
+          <Button variant="destructive" size="sm" onClick={handleDeleteCase} className="h-9 px-4">
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
           </Button>
         </div>
       </div>

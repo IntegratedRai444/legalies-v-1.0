@@ -9,10 +9,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    
+    if (!id) {
+      return errorResponse('Invalid case ID', 400)
+    }
+    
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return errorResponse('Unauthorized', 401)
     }
 
@@ -221,10 +226,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    
+    if (!id) {
+      return errorResponse('Invalid case ID', 400)
+    }
+    
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return errorResponse('Unauthorized', 401)
     }
 
@@ -238,30 +248,52 @@ export async function DELETE(
       return errorResponse('No firm associated', 403)
     }
 
-    if (profile?.role !== 'admin') {
-      return errorResponse('Only admins can delete cases', 403)
+    // Ensure case belongs to user's firm
+    const { data: caseData } = await supabase
+      .from('cases')
+      .select('id')
+      .eq('id', id)
+      .eq('firm_id', profile.firm_id)
+      .single()
+
+    if (!caseData) {
+      return errorResponse('Case not found', 404)
     }
 
+    // Delete related records first (cascade)
+    await supabase.from('case_documents').delete().eq('case_id', id)
+    await supabase.from('case_messages').delete().eq('case_id', id)
+    await supabase.from('case_expenses').delete().eq('case_id', id)
+    await supabase.from('hearings').delete().eq('case_id', id)
+    await supabase.from('tasks').delete().eq('case_id', id)
+    await supabase.from('diary_notes').delete().eq('case_id', id)
+    await supabase.from('activity_logs').delete().eq('case_id', id)
+    
+    // Delete case_parties relationships
+    await supabase.from('case_parties').delete().eq('case_id', id)
+
+    // Finally delete the case
     const { error } = await supabase
       .from('cases')
       .delete()
       .eq('id', id)
-      .eq('firm_id', profile.firm_id)
 
     if (error) {
-      return errorResponse(error.message, 500)
+      console.error("Case deletion error:", error)
+      return errorResponse('Failed to delete case', 500)
     }
 
     await logActivity(supabase, {
       case_id: id,
       user_id: user.id,
       activity_type: 'case_deleted',
-      description: `deleted case ID ${id}`,
+      description: `Case "${id}" was deleted`,
       firm_id: profile.firm_id
     })
 
-    return successResponse({ success: true })
+    return successResponse({ success: true, message: 'Case deleted successfully' })
   } catch (err: any) {
+    console.error('DELETE case error:', err)
     return errorResponse(err.message || 'Internal Server Error', 500)
   }
 }
