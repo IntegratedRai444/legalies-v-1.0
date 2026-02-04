@@ -3,24 +3,25 @@ import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supab
 import { startOfDay, endOfDay, addDays, startOfMonth, endOfMonth } from 'date-fns'
 
 export async function GET() {
-  const supabase = await createServerSupabaseClient()
-  const serviceRoleSupabase = await createServiceRoleClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    const supabase = await createServerSupabaseClient()
+    const serviceRoleSupabase = await createServiceRoleClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
 
-  // Check if user is Admin using Service Role to bypass RLS
-  const { data: profile } = await serviceRoleSupabase
-    .from('profiles')
-    .select('role, firm_id')
-    .eq('id', user.id)
-    .single()
+    // Check if user is Admin using Service Role to bypass RLS
+    const { data: profile } = await serviceRoleSupabase
+      .from('profiles')
+      .select('role, firm_id')
+      .eq('id', user.id)
+      .single()
 
-  if (profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+    if (profile?.role !== 'admin') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+    }
 
   const today = new Date()
   const todayStart = startOfDay(today).toISOString()
@@ -229,5 +230,9 @@ export async function GET() {
     upcomingHearings: hearingsRes.data || [],
     recentActivity: cleanActivity,
   })
+} catch (err: any) {
+  console.error('Admin stats API error:', err)
+  return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 })
+}
 }
 

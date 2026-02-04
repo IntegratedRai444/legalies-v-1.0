@@ -10,10 +10,10 @@ export async function PATCH(
   try {
     const { id } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: profile } = await supabase
@@ -23,7 +23,7 @@ export async function PATCH(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
     }
 
     // Validate expense belongs to case in same firm
@@ -44,7 +44,7 @@ export async function PATCH(
       .single()
 
     if (fetchError || !existingExpense) {
-      return NextResponse.json({ error: 'Expense not found or access denied' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Expense not found or access denied' }, { status: 404 })
     }
 
     // Ownership check - only creator or admin can edit
@@ -52,7 +52,7 @@ export async function PATCH(
     const isOwner = existingExpense.added_by === user.id
 
     if (!isOwner && !isAdmin) {
-      return NextResponse.json({ error: 'Only expense creator or admin can edit expenses' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Only expense creator or admin can edit expenses' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -67,7 +67,7 @@ export async function PATCH(
     if (category !== undefined) updateData.category = category
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'No valid fields to update' }, { status: 400 })
     }
 
     // Update expense
@@ -84,7 +84,7 @@ export async function PATCH(
 
     if (updateError) {
       console.error('Expense update error:', updateError)
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      return NextResponse.json({ success: false, error: updateError.message }, { status: 500 })
     }
 
     // Log activity
@@ -104,10 +104,10 @@ export async function PATCH(
       firm_id: profile.firm_id
     })
 
-    return NextResponse.json(updatedExpense)
+    return NextResponse.json({ success: true, data: updatedExpense })
   } catch (err: any) {
     console.error('Expense update error:', err)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 })
   }
 }
 
@@ -117,10 +117,10 @@ export async function DELETE(
 ) {
   try {
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id } = await params
@@ -132,7 +132,7 @@ export async function DELETE(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
     }
 
     // Verify ownership or admin role AND firm isolation
@@ -144,14 +144,14 @@ export async function DELETE(
       .single()
 
     if (!expense) {
-      return NextResponse.json({ error: 'Expense not found or access denied' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Expense not found or access denied' }, { status: 404 })
     }
 
     const isAdmin = normalize(profile?.role || '') === 'admin'
     const isOwner = expense.added_by === user.id
 
     if (!isOwner && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
 
     const { error } = await supabase
@@ -160,11 +160,11 @@ export async function DELETE(
       .eq('id', id)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
 }

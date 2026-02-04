@@ -1,4 +1,5 @@
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   const supabase = await createServerSupabaseClient()
@@ -20,9 +21,8 @@ export async function POST(req: Request) {
     })
 
     if (authError) {
-      return new Response(JSON.stringify({ success: false, error: authError.message }), { 
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
+      return NextResponse.json({ success: false, error: authError.message }, { 
+        status: 400
       })
     }
 
@@ -61,22 +61,17 @@ export async function POST(req: Request) {
 
       if (profileError) {
         console.error('Profile creation error:', profileError)
-        return new Response(JSON.stringify({ success: false, error: 'Failed to create profile' }), { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
+        return NextResponse.json({ success: false, error: 'Failed to create profile' }, { 
+          status: 500
         })
       }
     }
 
-    return new Response(JSON.stringify({ success: true, data: { user: authData.user } }), { 
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    })
+    return NextResponse.json({ success: true, data: { user: authData.user } })
   } catch (err: any) {
     console.error('Registration error:', err)
-    return new Response(JSON.stringify({ success: false, error: err.message || 'Internal Server Error' }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
+    return NextResponse.json({ success: false, error: err.message || 'Internal Server Error' }, { 
+      status: 500
     })
   }
 }

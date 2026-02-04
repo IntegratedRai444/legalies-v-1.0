@@ -7,9 +7,9 @@ import { normalizeRole } from '@/lib/utils'
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return errorResponse('Unauthorized', 401)
     }
 
@@ -68,9 +68,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return errorResponse('Unauthorized', 401)
     }
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     let success = false
     let attempts = 0
-    let finalInvoice = null
+    let finalInvoice: any = null
 
     while (!success && attempts < 3) {
       attempts++

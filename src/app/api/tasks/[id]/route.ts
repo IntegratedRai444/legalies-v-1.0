@@ -11,9 +11,9 @@ export async function GET(
   try {
     const { id } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return errorResponse('Unauthorized', 401)
     }
 
@@ -63,9 +63,9 @@ export async function PATCH(
   try {
     const { id } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return errorResponse('Unauthorized', 401)
     }
 
@@ -124,9 +124,9 @@ export async function DELETE(
   try {
     const { id } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return errorResponse('Unauthorized', 401)
     }
 

@@ -12,10 +12,10 @@ export async function PATCH(
   try {
     const { id: caseId, messageId } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: profile } = await supabase
@@ -25,7 +25,7 @@ export async function PATCH(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
     }
 
     // Validate message belongs to case in same firm
@@ -42,7 +42,7 @@ export async function PATCH(
       .single()
 
     if (fetchError || !existingMessage) {
-      return NextResponse.json({ error: 'Message not found or access denied' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Message not found or access denied' }, { status: 404 })
     }
 
     // Ownership check - only sender or admin can edit
@@ -50,14 +50,14 @@ export async function PATCH(
     const isSender = existingMessage.sender_id === user.id
 
     if (!isSender && !isAdmin) {
-      return NextResponse.json({ error: 'Only message sender or admin can edit messages' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Only message sender or admin can edit messages' }, { status: 403 })
     }
 
     const body = await request.json()
     const { message } = body
 
     if (!message || message.trim() === '') {
-      return NextResponse.json({ error: 'Message content is required' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Message content is required' }, { status: 400 })
     }
 
     // Update message
@@ -73,7 +73,7 @@ export async function PATCH(
 
     if (updateError) {
       console.error('Message update error:', updateError)
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      return NextResponse.json({ success: false, error: updateError.message }, { status: 500 })
     }
 
     // Log activity
@@ -89,10 +89,10 @@ export async function PATCH(
       firm_id: profile.firm_id
     })
 
-    return NextResponse.json(updatedMessage)
+    return NextResponse.json({ success: true, data: updatedMessage })
   } catch (err: any) {
     console.error('Message update error:', err)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 })
   }
 }
 
@@ -103,10 +103,10 @@ export async function DELETE(
   try {
     const { id: caseId, messageId } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: profile } = await supabase
@@ -116,7 +116,7 @@ export async function DELETE(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
     }
 
     // Validate message belongs to case in same firm
@@ -133,7 +133,7 @@ export async function DELETE(
       .single()
 
     if (fetchError || !existingMessage) {
-      return NextResponse.json({ error: 'Message not found or access denied' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Message not found or access denied' }, { status: 404 })
     }
 
     // Ownership check - only sender or admin can delete
@@ -141,7 +141,7 @@ export async function DELETE(
     const isSender = existingMessage.sender_id === user.id
 
     if (!isSender && !isAdmin) {
-      return NextResponse.json({ error: 'Only message sender or admin can delete messages' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Only message sender or admin can delete messages' }, { status: 403 })
     }
 
     // Delete related mentions first
@@ -158,7 +158,7 @@ export async function DELETE(
 
     if (deleteError) {
       console.error('Message delete error:', deleteError)
-      return NextResponse.json({ error: deleteError.message }, { status: 500 })
+      return NextResponse.json({ success: false, error: deleteError.message }, { status: 500 })
     }
 
     // Log activity
@@ -174,6 +174,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (err: any) {
     console.error('Message delete error:', err)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 })
   }
 }

@@ -11,10 +11,10 @@ export async function PATCH(
   try {
     const { id: caseId, hearingId } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     // Get user profile
@@ -67,7 +67,7 @@ export async function PATCH(
 
     if (error) {
       console.error('Hearing Update Error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
     // Log activity
@@ -88,9 +88,9 @@ export async function PATCH(
         .eq('firm_id', profile.firm_id)
     }
 
-    return NextResponse.json(hearing)
+    return NextResponse.json({ success: true, data: hearing })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
 }
 
@@ -101,10 +101,10 @@ export async function DELETE(
   try {
     const { id: caseId, hearingId } = await params
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     // Get user profile
@@ -115,7 +115,7 @@ export async function DELETE(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
     }
 
     // Permission check and Firm Isolation
@@ -127,14 +127,14 @@ export async function DELETE(
       .single()
 
     if (!caseData) {
-      return NextResponse.json({ error: 'Case not found or access denied' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Case not found or access denied' }, { status: 404 })
     }
 
     const isAdmin = normalize(profile.role) === 'admin'
     const isAssigned = caseData.assigned_lawyer_id === user.id
 
     if (!isAdmin && !isAssigned) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
 
     // Get hearing details before deletion for activity log
@@ -146,7 +146,7 @@ export async function DELETE(
       .single()
 
     if (!hearing) {
-      return NextResponse.json({ error: 'Hearing not found' }, { status: 404 })
+      return NextResponse.json({ success: false, error: 'Hearing not found' }, { status: 404 })
     }
 
     // Delete the hearing
@@ -158,7 +158,7 @@ export async function DELETE(
 
     if (error) {
       console.error('Hearing Delete Error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
     // Recalculate next hearing date for the case
@@ -190,6 +190,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
 }
