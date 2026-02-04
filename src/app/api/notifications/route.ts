@@ -139,7 +139,7 @@ async function checkReminders(userId: string, firmId: string) {
         await supabase.from('notifications').insert({
           user_id: userId,
           title,
-          message: `Hearing tomorrow for ${h.case?.case_uid || 'Case'}. Purpose: ${h.purpose || h.hearing_type || 'General'}.`,
+          message: `Hearing tomorrow for ${h.case?.case_uid || 'Case'}. Purpose: ${h.hearing_type || 'General'}.`,
           type: 'warning',
           link: `/cases/${h.case_id}`,
           is_read: false,
