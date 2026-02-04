@@ -60,12 +60,22 @@ export default function NotificationsPage() {
       const res = await fetch('/api/notifications', {
         credentials: 'include'
       })
-      if (res.ok) {
-        const data = await res.json()
-        setNotifications(Array.isArray(data) ? data : [])
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.success && Array.isArray(data.data)) {
+        setNotifications(data.data)
+      } else {
+        setNotifications([])
       }
     } catch (error) {
       console.error('Error fetching notifications:', error)
+      setNotifications([])
     } finally {
       setLoading(false)
     }

@@ -115,8 +115,15 @@ export default function DashboardClient() {
       const res = await fetch('/api/dashboard', {
         credentials: 'include'
       })
-      const { data, error } = await res.json()
-      if (error || !res.ok) {
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const result = text ? JSON.parse(text) : null
+      
+      if (result?.error || !result?.data) {
         setData({
           todayHearings: [],
           upcomingHearings: [],
@@ -133,7 +140,7 @@ export default function DashboardClient() {
           }
         })
       } else {
-        setData(data)
+        setData(result.data)
       }
     } catch {
       toast.error('Failed to load dashboard')

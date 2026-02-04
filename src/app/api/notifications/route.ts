@@ -3,41 +3,47 @@ import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supab
 import { format, addDays, startOfDay } from 'date-fns'
 
 export async function GET() {
-  const supabase = await createServerSupabaseClient()
-  const serviceRoleSupabase = await createServiceRoleClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    const supabase = await createServerSupabaseClient()
+    const serviceRoleSupabase = await createServiceRoleClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Check if user is Admin using Service Role to bypass RLS
+    const { data: profile } = await serviceRoleSupabase
+      .from('profiles')
+      .select('role, firm_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.firm_id) {
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
+    }
+
+    // Trigger automated reminder generation
+    await checkReminders(user.id, profile.firm_id)
+
+    const { data: notifications, error } = await serviceRoleSupabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('firm_id', profile.firm_id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (error) {
+      console.error("Notifications API error:", error)
+      return NextResponse.json({ success: false, error: 'Failed to load notifications' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, data: notifications || [] })
+  } catch (err) {
+    console.error("Notifications API error:", err)
+    return NextResponse.json({ success: false, error: 'Failed to load notifications' }, { status: 500 })
   }
-
-  // Check if user is Admin using Service Role to bypass RLS
-  const { data: profile } = await serviceRoleSupabase
-    .from('profiles')
-    .select('role, firm_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.firm_id) {
-    return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
-  }
-
-  // Trigger automated reminder generation
-  await checkReminders(user.id, profile.firm_id)
-
-  const { data: notifications, error } = await serviceRoleSupabase
-    .from('notifications')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('firm_id', profile.firm_id)
-    .order('created_at', { ascending: false })
-    .limit(50)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(notifications)
 }
 
 export async function PATCH(request: NextRequest) {

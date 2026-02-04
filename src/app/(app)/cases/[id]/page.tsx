@@ -188,7 +188,14 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/cases/${id}`, {
         credentials: 'include'
       })
-      const data = await res.json()
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
       setCaseData(data)
       if (data) {
         setEditForm({
@@ -217,14 +224,22 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/cases/${id}/hearings`, {
         credentials: 'include'
       })
-      const data = await res.json()
-      if (data.error || !Array.isArray(data)) {
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.error || !Array.isArray(data)) {
         setHearings([])
       } else {
         setHearings(data)
       }
     } catch {
       console.error('Failed to load hearings')
+      setHearings([])
     }
   }
 
@@ -233,14 +248,22 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/cases/${id}/documents`, {
         credentials: 'include'
       })
-      const data = await res.json()
-      if (data.error || !Array.isArray(data)) {
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.error || !Array.isArray(data?.data)) {
         setDocuments([])
       } else {
-        setDocuments(data)
+        setDocuments(data.data)
       }
     } catch {
       console.error('Failed to load documents')
+      setDocuments([])
     }
   }
 
@@ -249,14 +272,22 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/diary?case_id=${id}`, {
         credentials: 'include'
       })
-      const data = await res.json()
-      if (data.error || !Array.isArray(data)) {
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.error || !Array.isArray(data?.data)) {
         setDiaryNotes([])
       } else {
-        setDiaryNotes(data)
+        setDiaryNotes(data.data)
       }
     } catch {
       console.error('Failed to load diary notes')
+      setDiaryNotes([])
     }
   }
 
@@ -265,12 +296,22 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/tasks?caseId=${id}`, {
         credentials: 'include'
       })
-      const data = await res.json()
-      if (Array.isArray(data)) {
-        setTasks(data)
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (Array.isArray(data?.data)) {
+        setTasks(data.data)
+      } else {
+        setTasks([])
       }
     } catch {
       console.error('Failed to load tasks')
+      setTasks([])
     }
   }
 
@@ -279,11 +320,18 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/cases/${id}/messages`, {
         credentials: 'include'
       })
-      const data = await res.json()
-      if (data.error || !Array.isArray(data)) {
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.error || !Array.isArray(data?.data)) {
         setMessages([])
       } else {
-        setMessages(data)
+        setMessages(data.data)
       }
     } catch {
       console.error('Failed to load messages')
@@ -445,15 +493,21 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/cases/${id}/documents/${docId}/download`, {
         credentials: 'include'
       })
-      const data = await res.json()
       
       if (!res.ok) {
-        toast.error(data.error || 'Failed to get download link')
+        const text = await res.text()
+        const error = text ? JSON.parse(text) : null
+        toast.error(error?.error || 'Failed to get download link')
         return
       }
 
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+
       // Open the signed URL in a new tab
-      window.open(data.url, '_blank')
+      if (data?.url) {
+        window.open(data.url, '_blank')
+      }
     } catch {
       toast.error('Failed to download document')
     }
@@ -470,10 +524,10 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
         credentials: 'include'
       })
       
-      const data = await res.json()
-      
       if (!res.ok) {
-        toast.error(data.error || 'Failed to delete document')
+        const text = await res.text()
+        const error = text ? JSON.parse(text) : null
+        toast.error(error?.error || 'Failed to delete document')
         return
       }
 
@@ -505,8 +559,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       })
       
       if (!res.ok) {
-        const error = await res.json()
-        toast.error(error.error || 'Failed to update document')
+        const text = await res.text()
+        const error = text ? JSON.parse(text) : null
+        toast.error(error?.error || 'Failed to update document')
         return
       }
 
@@ -537,8 +592,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       })
       
       if (!res.ok) {
-        const error = await res.json()
-        toast.error(error.error || 'Failed to update message')
+        const text = await res.text()
+        const error = text ? JSON.parse(text) : null
+        toast.error(error?.error || 'Failed to update message')
         return
       }
 
@@ -562,8 +618,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       })
       
       if (!res.ok) {
-        const error = await res.json()
-        toast.error(error.error || 'Failed to delete message')
+        const text = await res.text()
+        const error = text ? JSON.parse(text) : null
+        toast.error(error?.error || 'Failed to delete message')
         return
       }
 
@@ -592,8 +649,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
         })
         
         if (!uploadRes.ok) {
-          const error = await uploadRes.json()
-          console.error(`Failed to upload ${file.name}:`, error.error)
+          const text = await uploadRes.text()
+          const error = text ? JSON.parse(text) : null
+          console.error(`Failed to upload ${file.name}:`, error?.error)
           toast.error(`Failed to upload ${file.name}`)
         }
       }
@@ -1011,8 +1069,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                                     credentials: 'include',
                                   })
                                   if (!res.ok) {
-                                    const error = await res.json()
-                                    toast.error(error.error || 'Failed to delete hearing')
+                                    const text = await res.text()
+                                    const error = text ? JSON.parse(text) : null
+                                    toast.error(error?.error || 'Failed to delete hearing')
                                     return
                                   }
                                   toast.success('Hearing deleted successfully')

@@ -38,18 +38,25 @@ export function NotificationBell() {
       const res = await fetch('/api/notifications', {
         credentials: 'include'
       })
-      if (res.ok) {
-        const data = await res.json()
-        if (Array.isArray(data)) {
-          setNotifications(data)
-          setUnreadCount(data.filter((n: Notification) => !n.is_read).length)
-        } else {
-          setNotifications([])
-          setUnreadCount(0)
-        }
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : null
+      
+      if (data?.success && Array.isArray(data.data)) {
+        setNotifications(data.data)
+        setUnreadCount(data.data.filter((n: Notification) => !n.is_read).length)
+      } else {
+        setNotifications([])
+        setUnreadCount(0)
       }
     } catch (error) {
       console.error('Error fetching notifications:', error)
+      setNotifications([])
+      setUnreadCount(0)
     }
   }, [])
 

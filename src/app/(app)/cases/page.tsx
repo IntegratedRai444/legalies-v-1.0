@@ -30,11 +30,18 @@ function CasesContent() {
       const res = await fetch(`/api/cases?${params}`, {
         credentials: 'include'
       })
-      const { data, error } = await res.json()
-      if (error || !Array.isArray(data)) {
+      
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`)
+      }
+
+      const text = await res.text()
+      const result = text ? JSON.parse(text) : null
+      
+      if (result?.error || !Array.isArray(result?.data)) {
         setCases([])
       } else {
-        setCases(data)
+        setCases(result.data)
       }
     } catch {
       toast.error('Failed to load cases')
@@ -105,7 +112,7 @@ function CasesContent() {
           ))}
         </div>
       ) : cases.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-muted/10 rounded-[2rem] border-2 border-dashed">
+        <div className="flex flex-col items-center justify-center py-24 bg-muted/10 rounded-4xl border-2 border-dashed">
           <AlertCircle className="w-12 h-12 text-muted-foreground/20 mb-4" />
           <h3 className="text-xl font-bold text-muted-foreground">No cases found</h3>
           <p className="text-muted-foreground mt-2 mb-8">Try adjusting your search or filters.</p>

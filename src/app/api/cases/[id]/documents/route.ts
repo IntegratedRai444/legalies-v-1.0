@@ -7,39 +7,50 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    const { id } = await params
+    
+    if (!id) {
+      return NextResponse.json({ success: false, error: "Missing case ID" }, { status: 400 })
+    }
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('firm_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.firm_id) {
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
+    }
+
+    const { data: documents, error } = await supabase
+      .from('case_documents')
+      .select(`
+        *,
+        case:cases!inner(id, firm_id)
+      `)
+      .eq('case_id', id)
+      .eq('case.firm_id', profile.firm_id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error("Documents API error:", error)
+      return NextResponse.json({ success: false, error: 'Failed to load documents' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, data: documents || [] })
+  } catch (err) {
+    console.error("Documents API error:", err)
+    return NextResponse.json({ success: false, error: 'Failed to load documents' }, { status: 500 })
   }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('firm_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.firm_id) {
-    return NextResponse.json({ error: 'No firm associated' }, { status: 403 })
-  }
-
-  const { data: documents, error } = await supabase
-    .from('case_documents')
-    .select(`
-      *,
-      case:cases!inner(id, firm_id)
-    `)
-    .eq('case_id', id)
-    .eq('case.firm_id', profile.firm_id)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(documents)
 }
 
 export async function POST(
