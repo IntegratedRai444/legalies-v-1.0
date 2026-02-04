@@ -22,7 +22,8 @@ export async function PATCH(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
+      console.warn('User has no firm_id associated:', user.id)
+      return NextResponse.json({ success: true, data: null }) // Return null for users without firm
     }
 
     // Verify ownership and firm isolation
@@ -86,7 +87,8 @@ export async function DELETE(
       .single()
 
     if (!profile?.firm_id) {
-      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
+      console.warn('User has no firm_id associated:', user.id)
+      return NextResponse.json({ success: true, data: null }) // Return null for users without firm
     }
 
     // Verify ownership and firm isolation
