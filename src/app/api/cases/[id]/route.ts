@@ -10,14 +10,20 @@ export async function GET(
   try {
     const { id } = await params
     
+    console.log('🔍 CASE DETAIL API: Received ID:', id)
+    
     if (!id) {
+      console.error('❌ CASE DETAIL API: No ID provided')
       return errorResponse('Invalid case ID', 400)
     }
     
     const supabase = await createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
+    console.log('🔍 CASE DETAIL API: Auth user:', user?.id)
+
     if (authError || !user) {
+      console.error('❌ CASE DETAIL API: Auth error:', authError)
       return errorResponse('Unauthorized', 401)
     }
 
@@ -26,6 +32,8 @@ export async function GET(
       .select('role, firm_id')
       .eq('id', user.id)
       .single()
+
+    console.log('🔍 CASE DETAIL API: User profile:', { userId: user.id, firmId: profile?.firm_id, role: profile?.role })
 
     if (!profile?.firm_id) {
       console.warn('User has no firm_id associated:', user.id)
@@ -74,10 +82,14 @@ export async function GET(
       .single()
 
     if (error) {
+      console.error('❌ CASE DETAIL API: Database query error:', error)
       return errorResponse(error.message, 500)
     }
 
+    console.log('🔍 CASE DETAIL API: Case data found:', !!caseData)
+
     if (!caseData) {
+      console.error('❌ CASE DETAIL API: Case not found for ID:', id)
       return errorResponse('Case not found', 404)
     }
 
@@ -216,6 +228,7 @@ export async function PATCH(
       firm_id: profile.firm_id
     })
 
+    console.log('🔍 CASE DETAIL API: Returning case data for ID:', id)
     return successResponse(updatedCase)
   } catch (err: any) {
     return errorResponse(err.message || 'Internal Server Error', 500)
@@ -236,7 +249,10 @@ export async function DELETE(
     const supabase = await createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
+    console.log('🔍 CASE DETAIL API: Auth user:', user?.id)
+
     if (authError || !user) {
+      console.error('❌ CASE DETAIL API: Auth error:', authError)
       return errorResponse('Unauthorized', 401)
     }
 
@@ -245,6 +261,8 @@ export async function DELETE(
       .select('role, firm_id')
       .eq('id', user.id)
       .single()
+
+    console.log('🔍 CASE DETAIL API: User profile:', { userId: user.id, firmId: profile?.firm_id, role: profile?.role })
 
     if (!profile?.firm_id) {
       console.warn('User has no firm_id associated:', user.id)
