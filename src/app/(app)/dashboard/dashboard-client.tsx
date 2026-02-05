@@ -167,20 +167,20 @@ export default function DashboardClient() {
     }
   }
 
-  const filteredTodayHearings = data?.todayHearings.filter(h =>
+  const filteredTodayHearings = (Array.isArray(data?.todayHearings) ? data?.todayHearings.filter(h =>
     h.case.case_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     h.case.case_uid.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || []
+  ) : []) as any[]
 
-  const filteredTodayTasks = data?.todayTasks.filter(t =>
+  const filteredTodayTasks = (Array.isArray(data?.todayTasks) ? data?.todayTasks.filter(t =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.case?.case_title.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || []
+  ) : []) as any[]
 
-  const filteredOverdueTasks = data?.overdueTasks.filter(t =>
+  const filteredOverdueTasks = (Array.isArray(data?.overdueTasks) ? data?.overdueTasks.filter(t =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.case?.case_title.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || []
+  ) : []) as any[]
 
   const priorityColors = {
     high: 'bg-destructive/10 text-destructive border-destructive/30',
@@ -291,7 +291,7 @@ export default function DashboardClient() {
                           </div>
                         </div>
                       </div>
-                      <Badge className={`${priorityColors[task.priority]} shrink-0 text-[10px]`} variant="outline">
+                      <Badge className={`${priorityColors[task.priority as keyof typeof priorityColors]} shrink-0 text-[10px]`} variant="outline">
                         {task.priority}
                       </Badge>
                     </div>
@@ -387,7 +387,7 @@ export default function DashboardClient() {
                           </Link>
                         )}
                       </div>
-                      <Badge className={`${priorityColors[task.priority]} shrink-0 text-[10px]`} variant="outline">
+                      <Badge className={`${priorityColors[task.priority as keyof typeof priorityColors]} shrink-0 text-[10px]`} variant="outline">
                         {task.priority}
                       </Badge>
                     </div>

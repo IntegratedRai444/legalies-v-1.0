@@ -50,7 +50,7 @@ export default function TasksPage() {
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
-  const filteredTasks = tasks.filter(t => {
+  const filteredTasks = Array.isArray(tasks) ? tasks.filter(t => {
     if (!t.due_date) return filter === 'all'
     const isOverdue = isPast(new Date(t.due_date)) && !isDateToday(new Date(t.due_date)) && t.status !== 'completed'
 
@@ -61,10 +61,10 @@ export default function TasksPage() {
       return t.due_date >= todayStr && t.due_date <= nextWeek && t.status !== 'completed'
     }
     return true
-  })
+  }) : []
 
-  const pendingTasks = filteredTasks.filter(t => t.status !== 'completed')
-  const completedTasks = filteredTasks.filter(t => t.status === 'completed')
+  const pendingTasks = Array.isArray(filteredTasks) ? filteredTasks.filter(t => t.status !== 'completed') : []
+  const completedTasks = Array.isArray(filteredTasks) ? filteredTasks.filter(t => t.status === 'completed') : []
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">

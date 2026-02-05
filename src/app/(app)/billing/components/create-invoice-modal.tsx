@@ -43,7 +43,7 @@ export function CreateInvoiceModal({ onInvoiceCreated }: { onInvoiceCreated: () 
         credentials: 'include'
       })
         .then(res => res.json())
-        .then(data => setCases(data))
+        .then(data => setCases(Array.isArray(data.data) ? data.data : []))
     }
   }, [open])
 

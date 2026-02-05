@@ -36,7 +36,7 @@ export default function BulkReassignmentPage() {
       const casesData = await casesRes.json()
       const advocatesData = await advocatesRes.json()
       
-      setCases(casesData || [])
+      setCases(Array.isArray(casesData.data) ? casesData.data : [])
       setAdvocates(advocatesData || [])
     } catch {
       toast.error('Failed to load data')
@@ -45,9 +45,9 @@ export default function BulkReassignmentPage() {
     }
   }
 
-  const filteredCases = cases.filter(c => 
+  const filteredCases = Array.isArray(cases) ? cases.filter(c => 
     filterAdvocate === 'all' || c.assigned_lawyer_id === filterAdvocate
-  )
+  ) : []
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {

@@ -114,11 +114,11 @@ export default function PartiesPage() {
     }
   }
 
-  const filteredParties = parties.filter(p =>
+  const filteredParties = Array.isArray(parties) ? parties.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.phone?.includes(searchQuery) ||
     p.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  ) : []
 
   if (loading) {
     return (
@@ -270,7 +270,7 @@ export default function PartiesPage() {
                 )}
                 {party.address && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
+                    <MapPin className="w-4 h-4 shrink-0" />
                     <span className="line-clamp-1">{party.address}</span>
                   </div>
                 )}

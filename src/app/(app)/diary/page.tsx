@@ -138,7 +138,7 @@ export default function DiaryPage() {
   })
 
   const getNotesByDate = (dateStr: string) => {
-    return notes.filter(n => n.note_date === dateStr)
+    return Array.isArray(notes) ? notes.filter(n => n.note_date === dateStr) : []
   }
 
   return (
