@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 interface PartyInput {
   name: string
   phone: string
+  email: string
   address: string
   role_label: string
 }
@@ -59,16 +60,16 @@ export default function NewCasePage() {
   })
 
   const [clients, setClients] = useState<PartyInput[]>([
-    { name: '', phone: '', address: '', role_label: 'Petitioner' }
+    { name: '', phone: '', email: '', address: '', role_label: 'Petitioner' }
   ])
   const [opponents, setOpponents] = useState<PartyInput[]>([
-    { name: '', phone: '', address: '', role_label: 'Respondent' }
+    { name: '', phone: '', email: '', address: '', role_label: 'Respondent' }
   ])
   const [documents, setDocuments] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
 
   const addClient = () =>
-    setClients([...clients, { name: '', phone: '', address: '', role_label: 'Petitioner' }])
+    setClients([...clients, { name: '', phone: '', email: '', address: '', role_label: 'Petitioner' }])
 
   const removeClient = (i: number) =>
     setClients(clients.filter((_, idx) => idx !== i))
@@ -80,7 +81,7 @@ export default function NewCasePage() {
   }
 
   const addOpponent = () =>
-    setOpponents([...opponents, { name: '', phone: '', address: '', role_label: 'Respondent' }])
+    setOpponents([...opponents, { name: '', phone: '', email: '', address: '', role_label: 'Respondent' }])
 
   const removeOpponent = (i: number) =>
     setOpponents(opponents.filter((_, idx) => idx !== i))
@@ -356,12 +357,13 @@ export default function NewCasePage() {
                         placeholder="Contact Number"
                       />
                     </div>
-                    <div className="space-y-1 md:col-span-2">
-                      <Label>Address</Label>
+                    <div className="space-y-1">
+                      <Label>Email</Label>
                       <Input
-                        value={client.address}
-                        onChange={(e) => updateClient(i, 'address', e.target.value)}
-                        placeholder="Address"
+                        type="email"
+                        value={client.email}
+                        onChange={(e) => updateClient(i, 'email', e.target.value)}
+                        placeholder="Email Address"
                       />
                     </div>
                     <div className="space-y-1">
@@ -379,6 +381,14 @@ export default function NewCasePage() {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label>Address</Label>
+                      <Input
+                        value={client.address}
+                        onChange={(e) => updateClient(i, 'address', e.target.value)}
+                        placeholder="Address"
+                      />
                     </div>
                   </div>
                 </div>
@@ -418,6 +428,23 @@ export default function NewCasePage() {
                       />
                     </div>
                     <div className="space-y-1">
+                      <Label>Phone</Label>
+                      <Input
+                        value={opponent.phone}
+                        onChange={(e) => updateOpponent(i, 'phone', e.target.value)}
+                        placeholder="Contact Number"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Email</Label>
+                      <Input
+                        type="email"
+                        value={opponent.email}
+                        onChange={(e) => updateOpponent(i, 'email', e.target.value)}
+                        placeholder="Email Address"
+                      />
+                    </div>
+                    <div className="space-y-1">
                       <Label>Role</Label>
                       <Select
                         value={opponent.role_label}
@@ -432,6 +459,14 @@ export default function NewCasePage() {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label>Address</Label>
+                      <Input
+                        value={opponent.address}
+                        onChange={(e) => updateOpponent(i, 'address', e.target.value)}
+                        placeholder="Address"
+                      />
                     </div>
                   </div>
                 </div>

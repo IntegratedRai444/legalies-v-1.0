@@ -334,51 +334,77 @@ export async function POST(request: NextRequest) {
       return errorResponse('Failed to generate unique case ID after multiple attempts', 500)
     }
 
-    // 2. Prepare all parties for batch insertion
-    const allParties = [
-      ...(clients?.map((c: any) => ({ ...c, party_kind: 'client' })) || []),
-      ...(opponents?.map((o: any) => ({ ...o, party_kind: 'opponent' })) || [])
-    ]
+    // 2. Insert Client Party
+    let clientParty = null
+    if (clients && clients.length > 0 && clients[0].name && clients[0].name.trim()) {
+      try {
+        const { data: clientData, error: clientError } = await supabase
+          .from('parties')
+          .insert({
+            name: clients[0].name,
+            phone: clients[0].phone || null,
+            email: clients[0].email || null,
+            address: clients[0].address || null,
+            party_kind: 'person',
+            firm_id: profile.firm_id,
+            created_by: user.id
+          })
+          .select()
+          .single()
 
-    const partyData = (allParties || [])
-      .filter((p: any) => p.name && p.name.trim())
-      .map((p: any) => ({
-        name: p.name,
-        phone: p.phone,
-        address: p.address,
-        party_kind: p.party_kind,
-        created_by: user.id,
-        firm_id: profile.firm_id
-      }))
-
-    if (partyData.length > 0) {
-      const { data: createdParties, error: partiesError } = await supabase
-        .from('parties')
-        .insert(partyData)
-        .select()
-
-      if (partiesError) {
-        console.error('Error batch creating parties:', partiesError)
-      } else if (createdParties) {
-        // 3. Prepare link records for batch insertion
-        const partyLinks = createdParties.map((party: any, index: number) => {
-          // Match back to the original party's role_label using index
-          const originalParty = partyData[index]
-          const sourceParty = allParties.find((ap: any) => ap.name === party.name && ap.party_kind === party.party_kind)
-          return {
+        if (clientError) {
+          console.error('Error creating client party:', clientError)
+        } else {
+          clientParty = clientData
+          // Link Client to Case
+          const { error: linkError } = await supabase.from('case_parties').insert({
             case_id: newCase.id,
-            party_id: party.id,
-            role_label: sourceParty?.role_label || 'Party'
+            party_id: clientParty.id,
+            role_label: 'client'
+          })
+          if (linkError) {
+            console.error('Error linking client to case:', linkError)
           }
-        })
-
-        if (partyLinks.length > 0) {
-          const { error: linkError } = await supabase
-            .from('case_parties')
-            .insert(partyLinks)
-
-          if (linkError) console.error('Error linking parties:', linkError)
         }
+      } catch (err) {
+        console.error('Client creation error:', err)
+      }
+    }
+
+    // 3. Insert Opponent Party
+    let opponentParty = null
+    if (opponents && opponents.length > 0 && opponents[0].name && opponents[0].name.trim()) {
+      try {
+        const { data: opponentData, error: opponentError } = await supabase
+          .from('parties')
+          .insert({
+            name: opponents[0].name,
+            phone: opponents[0].phone || null,
+            email: opponents[0].email || null,
+            address: opponents[0].address || null,
+            party_kind: 'organization',
+            firm_id: profile.firm_id,
+            created_by: user.id
+          })
+          .select()
+          .single()
+
+        if (opponentError) {
+          console.error('Error creating opponent party:', opponentError)
+        } else {
+          opponentParty = opponentData
+          // Link Opponent to Case
+          const { error: linkError } = await supabase.from('case_parties').insert({
+            case_id: newCase.id,
+            party_id: opponentParty.id,
+            role_label: 'opponent'
+          })
+          if (linkError) {
+            console.error('Error linking opponent to case:', linkError)
+          }
+        }
+      } catch (err) {
+        console.error('Opponent creation error:', err)
       }
     }
 
