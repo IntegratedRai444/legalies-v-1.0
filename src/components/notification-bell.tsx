@@ -48,7 +48,7 @@ export function NotificationBell() {
       
       if (data?.success && Array.isArray(data.data)) {
         setNotifications(data.data)
-        setUnreadCount(data.data.filter((n: Notification) => !n.is_read).length)
+        setUnreadCount((data.data || []).filter((n: Notification) => !n.is_read).length)
       } else {
         setNotifications([])
         setUnreadCount(0)
