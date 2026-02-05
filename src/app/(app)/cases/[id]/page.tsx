@@ -1104,31 +1104,45 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                 <CardContent className="space-y-6">
                   <div className="space-y-3">
                     <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Clients</p>
-                    {caseData.clients?.map(c => (
-                      <div key={c.id} className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                          <Users className="w-4 h-4" />
+                    {Array.isArray(caseData.clients) && caseData.clients.length > 0 ? (
+                      caseData.clients.map(c => (
+                        <div key={c.id} className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <Users className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold truncate">{c.party?.name || 'Unknown Client'}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold">{c.role_label || 'client'}</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold truncate">{c.party.name}</p>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold">{c.role_label}</p>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Users className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                        <p className="text-sm">No clients assigned to this case</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                   <div className="space-y-3">
                     <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Opponents</p>
-                    {caseData.opponents?.map(o => (
-                      <div key={o.id} className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                          <Users className="w-4 h-4" />
+                    {Array.isArray(caseData.opponents) && caseData.opponents.length > 0 ? (
+                      caseData.opponents.map(o => (
+                        <div key={o.id} className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                            <Users className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold truncate">{o.party?.name || 'Unknown Opponent'}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold">{o.role_label || 'opponent'}</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold truncate">{o.party.name}</p>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold">{o.role_label}</p>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Users className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                        <p className="text-sm">No opponents assigned to this case</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>

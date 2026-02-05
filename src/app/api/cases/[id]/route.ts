@@ -98,7 +98,7 @@ export async function GET(
     const rawParties = caseData.case_parties || []
 
     const clients = rawParties
-      .filter((cp: any) => cp.party?.party_kind === 'client')
+      .filter((cp: any) => cp.role_label === 'client')
       .map((cp: any) => ({
         id: cp.id,
         party_id: cp.party_id,
@@ -107,7 +107,7 @@ export async function GET(
       }))
 
     const opponents = rawParties
-      .filter((cp: any) => cp.party?.party_kind === 'opponent')
+      .filter((cp: any) => cp.role_label === 'opponent')
       .map((cp: any) => ({
         id: cp.id,
         party_id: cp.party_id,

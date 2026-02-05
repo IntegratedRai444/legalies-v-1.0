@@ -113,24 +113,32 @@ export default function CasePrintClient({ caseId }: CasePrintClientProps) {
         <section>
           <h2 className="text-lg font-bold border-b-2 border-gray-200 pb-2 mb-4 uppercase">Clients (Petitioners)</h2>
           <div className="space-y-4">
-            {caseData.clients?.map(c => (
-              <div key={c.id} className="border-l-4 border-black pl-4">
-                <p className="font-bold">{c.party.name}</p>
-                <p className="text-sm text-gray-600">{c.role_label}</p>
-                {c.party.phone && <p className="text-xs text-gray-500 mt-1">{c.party.phone}</p>}
-              </div>
-            ))}
+            {Array.isArray(caseData.clients) && caseData.clients.length > 0 ? (
+              caseData.clients.map(c => (
+                <div key={c.id} className="border-l-4 border-black pl-4">
+                  <p className="font-bold">{c.party?.name || 'Unknown Client'}</p>
+                  <p className="text-sm text-gray-600">{c.role_label || 'client'}</p>
+                  {c.party?.phone && <p className="text-xs text-gray-500 mt-1">{c.party.phone}</p>}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 italic">No clients assigned</p>
+            )}
           </div>
         </section>
         <section>
           <h2 className="text-lg font-bold border-b-2 border-gray-200 pb-2 mb-4 uppercase">Opponents (Respondents)</h2>
           <div className="space-y-4">
-            {caseData.opponents?.map(o => (
-              <div key={o.id} className="border-l-4 border-gray-300 pl-4">
-                <p className="font-bold">{o.party.name}</p>
-                <p className="text-sm text-gray-600">{o.role_label}</p>
-              </div>
-            ))}
+            {Array.isArray(caseData.opponents) && caseData.opponents.length > 0 ? (
+              caseData.opponents.map(o => (
+                <div key={o.id} className="border-l-4 border-gray-300 pl-4">
+                  <p className="font-bold">{o.party?.name || 'Unknown Opponent'}</p>
+                  <p className="text-sm text-gray-600">{o.role_label || 'opponent'}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 italic">No opponents assigned</p>
+            )}
           </div>
         </section>
       </div>
