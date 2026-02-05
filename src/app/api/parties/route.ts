@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
       return errorResponse('No firm associated', 403)
     }
 
+    console.log("PARTIES API firm_id:", profile.firm_id)
+
     const { data: parties, error } = await supabase
       .from('parties')
       .select(`
@@ -30,20 +32,31 @@ export async function GET(request: NextRequest) {
           case_id,
           cases (
             case_title,
-            id,
-            firm_id
+            id
           )
         )
       `)
       .eq('firm_id', profile.firm_id)
-      .order('name')
+      .order('created_at', { ascending: false })
+
+    console.log("PARTIES API result count:", parties?.length)
 
     if (error) {
+      console.error("PARTIES API error:", error)
       return errorResponse(error.message, 500)
     }
 
-    return successResponse(parties)
+    // Map party_kind to client/opponent for frontend compatibility
+    const mappedParties = parties?.map(party => ({
+      ...party,
+      party_kind: party.party_kind === 'person' ? 'client' : 
+                   party.party_kind === 'organization' ? 'opponent' : 
+                   party.party_kind
+    })) || []
+
+    return successResponse(mappedParties)
   } catch (err: any) {
+    console.error("PARTIES API unexpected error:", err)
     return errorResponse(err.message || 'Internal Server Error', 500)
   }
 }
@@ -66,6 +79,14 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
+    console.log("PARTIES POST API firm_id:", profile?.firm_id)
+    console.log("PARTIES POST API body:", body)
+
+    // Map frontend type to database party_kind
+    const party_kind = body.type === 'client' ? 'person' : 
+                       body.type === 'opponent' ? 'organization' : 
+                       body.party_kind
+
     const { data, error } = await supabase
       .from('parties')
       .insert([
@@ -74,7 +95,7 @@ export async function POST(request: NextRequest) {
           phone: body.phone,
           email: body.email,
           address: body.address,
-          party_kind: body.party_kind || body.type, // Handle both for safety
+          party_kind: party_kind,
           created_by: user.id,
           firm_id: profile?.firm_id
         },
@@ -83,11 +104,23 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
+      console.error("PARTIES POST API error:", error)
       return errorResponse(error.message, 500)
     }
 
-    return successResponse(data, 201)
+    console.log("PARTIES POST API success:", data)
+
+    // Map back to frontend format
+    const mappedData = {
+      ...data,
+      party_kind: data.party_kind === 'person' ? 'client' : 
+                   data.party_kind === 'organization' ? 'opponent' : 
+                   data.party_kind
+    }
+
+    return successResponse(mappedData, 201)
   } catch (err: any) {
+    console.error("PARTIES POST API unexpected error:", err)
     return errorResponse(err.message || 'Internal Server Error', 500)
   }
 }
