@@ -60,11 +60,70 @@ export async function GET(request: NextRequest) {
       .eq('firm_id', profile.firm_id)
       .order('created_at', { ascending: false })
 
-    if (status && status !== 'all') {
-      query = query.eq('status', status.toLowerCase())
-    }
+    let cases: any[] | null = null
+    let error: any = null
 
-    const { data: cases, error } = await query
+    if (status && status !== 'all') {
+      // Debug: Log the status filter being applied
+      console.log('Cases API - Filtering by status:', status, 'toLowerCase():', status.toLowerCase())
+      
+      // Try exact match first (for consistent data)
+      const result = await query.eq('status', status.toLowerCase())
+      cases = result.data
+      error = result.error
+      
+      // If no results, try case-insensitive filtering by fetching all and filtering manually
+      if (!error && (!cases || cases.length === 0)) {
+        console.log('Cases API - No results with exact match, trying case-insensitive filter')
+        const { data: allCases, error: allError } = await supabase
+          .from('cases')
+          .select(`
+            id,
+            case_uid,
+            case_title,
+            court_name,
+            court_city,
+            court_state,
+            case_type,
+            status,
+            stage,
+            priority,
+            filing_date,
+            next_hearing_date,
+            assigned_lawyer_id,
+            created_by,
+            firm_id,
+            agreed_fee,
+            last_updated_at,
+            created_at,
+            assigned_lawyer:profiles!cases_assigned_lawyer_id_fkey(id, full_name),
+            case_parties(
+              id,
+              role_label,
+              party:parties(*)
+            ),
+            hearings(hearing_date)
+          `)
+          .eq('firm_id', profile.firm_id)
+          .order('created_at', { ascending: false })
+        
+        if (!allError && allCases) {
+          cases = allCases.filter(c => c.status?.toLowerCase() === status.toLowerCase())
+          error = null
+        } else {
+          error = allError
+        }
+      }
+    } else {
+      // Debug: No status filter applied - fetching all cases
+      console.log('Cases API - No status filter, fetching all cases for firm:', profile.firm_id)
+      const result = await query
+      cases = result.data
+      error = result.error
+    }
+    
+    // Debug: Log all cases and their statuses
+    console.log('Cases API - All cases fetched:', cases?.map(c => ({ id: c.id, case_uid: c.case_uid, status: c.status })))
 
     if (error) {
       console.error('Case Fetch Error:', error)
