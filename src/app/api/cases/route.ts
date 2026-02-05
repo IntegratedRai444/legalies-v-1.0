@@ -193,12 +193,12 @@ export async function GET(request: NextRequest) {
     let filteredResult = result
     if (search) {
       const searchLower = search.toLowerCase()
-      filteredResult = result.filter(c =>
-        c.case_uid.toLowerCase().includes(searchLower) ||
-        c.case_title.toLowerCase().includes(searchLower) ||
+      filteredResult = (result || []).filter(c =>
+        c.case_uid?.toLowerCase().includes(searchLower) ||
+        c.case_title?.toLowerCase().includes(searchLower) ||
         c.court_name?.toLowerCase().includes(searchLower) ||
-        c.clients.some((cl: any) => cl.party?.name?.toLowerCase().includes(searchLower) || cl.party?.phone?.includes(search)) ||
-        c.opponents.some((op: any) => op.party?.name?.toLowerCase().includes(searchLower) || op.party?.phone?.includes(search))
+        c.clients?.some((cl: any) => cl.party?.name?.toLowerCase().includes(searchLower) || cl.party?.phone?.includes(search)) ||
+        c.opponents?.some((op: any) => op.party?.name?.toLowerCase().includes(searchLower) || op.party?.phone?.includes(search))
       )
     }
 
