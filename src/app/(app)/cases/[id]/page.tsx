@@ -58,6 +58,9 @@ type TimelineItem = {
 
 export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  
+  console.log('🔍 CASE DETAIL FRONTEND: Received case ID:', id)
+  
   const router = useRouter()
   const supabase = createClient()
   const [caseData, setCaseData] = useState<CaseWithParties | null>(null)
@@ -122,6 +125,8 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     const fetchAllData = async () => {
       try {
+        console.log('🔍 CASE DETAIL FRONTEND: Starting fetch for case ID:', id)
+        
         // Parallel fetch all data
         const [
           caseResult,
@@ -138,6 +143,15 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           fetch(`/api/tasks?caseId=${id}`, { credentials: 'include' }),
           fetch(`/api/cases/${id}/messages`, { credentials: 'include' })
         ])
+
+        console.log('🔍 CASE DETAIL FRONTEND: Fetch results:', {
+          case: caseResult.status,
+          hearings: hearingsResult.status,
+          documents: documentsResult.status,
+          diary: diaryNotesResult.status,
+          tasks: tasksResult.status,
+          messages: messagesResult.status
+        })
 
         // Process case data
         const caseText = await caseResult.text()
