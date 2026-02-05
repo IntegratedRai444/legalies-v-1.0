@@ -54,7 +54,6 @@ export async function POST(req: Request) {
         id: authData.user.id,
         full_name: fullName,
         email,
-        phone,
         role: 'advocate',
         firm_id: firm.id,
       })

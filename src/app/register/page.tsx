@@ -15,9 +15,8 @@ import { toast } from 'sonner'
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-    const [fullName, setFullName] = useState('')
-    const [phone, setPhone] = useState('')
-    const [showPassword, setShowPassword] = useState(false)
+  const [fullName, setFullName] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
     const supabase = createClient()
@@ -30,7 +29,7 @@ export default function RegisterPage() {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, fullName, phone }),
+          body: JSON.stringify({ email, password, fullName }),
         })
 
         const text = await res.text()
@@ -63,7 +62,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#faf8f5] via-[#f5f1eb] to-[#e8e2d9]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-linear-to-br from-[#faf8f5] via-[#f5f1eb] to-[#e8e2d9]">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-20 right-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
@@ -104,18 +103,6 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-12 text-base"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-medium">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+91 98765 43210"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
                 className="h-12 text-base"
               />
             </div>

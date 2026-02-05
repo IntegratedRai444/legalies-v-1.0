@@ -30,7 +30,7 @@ export async function GET(
       .from('case_messages')
       .select(`
         *,
-        sender:profiles(id, full_name),
+        sender:profiles!case_messages_sender_id_fkey(id, full_name),
         case:cases!inner(id, firm_id)
       `)
       .eq('case_id', id)
@@ -109,7 +109,7 @@ export async function POST(
       })
       .select(`
         *,
-        sender:profiles(id, full_name)
+        sender:profiles!case_messages_sender_id_fkey(id, full_name)
       `)
       .single()
 

@@ -66,7 +66,7 @@ export async function PATCH(
       .eq('id', messageId)
       .select(`
         *,
-        sender:profiles(id, full_name)
+        sender:profiles!case_messages_sender_id_fkey(id, full_name)
       `)
       .single()
 

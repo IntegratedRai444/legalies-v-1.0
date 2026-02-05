@@ -24,8 +24,16 @@ export async function POST(req: Request) {
   try {
     const { caseIds, newLawyerId, priority } = await req.json()
 
-    if (!caseIds || !Array.isArray(caseIds)) {
+    if (!caseIds || !Array.isArray(caseIds) || caseIds.length === 0) {
       return NextResponse.json({ error: 'Invalid case IDs' }, { status: 400 })
+    }
+
+    if (newLawyerId !== undefined && (typeof newLawyerId !== 'string' || newLawyerId.trim() === '')) {
+      return NextResponse.json({ error: 'Invalid lawyer ID' }, { status: 400 })
+    }
+
+    if (priority !== undefined && !['Routine', 'Urgent', 'High'].includes(priority)) {
+      return NextResponse.json({ error: 'Invalid priority value' }, { status: 400 })
     }
 
     const updates: any = {}

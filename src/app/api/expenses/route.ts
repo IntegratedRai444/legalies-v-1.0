@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       .from('case_expenses')
       .select(`
         *,
-        added_by_profile:profiles!added_by(full_name),
+        added_by_profile:profiles!case_expenses_added_by_fkey(full_name),
         case:cases!inner(id, firm_id)
       `)
       .eq('case_id', caseId)

@@ -48,6 +48,17 @@ export async function PATCH(req: Request) {
 
   const { userId, role, isActive } = await req.json()
 
+  // Input validation
+  if (!userId || typeof userId !== 'string') {
+    return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
+  }
+
+  if (role !== undefined && !['admin', 'lawyer', 'advocate'].includes(role)) {
+    return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+  }
+
+  // Note: isActive validation removed since is_active field doesn't exist in profiles table
+
   // Ensure we are updating a user from the same firm
   const { data: targetUser } = await serviceRoleSupabase
     .from('profiles')
@@ -61,7 +72,7 @@ export async function PATCH(req: Request) {
 
   const updateData: any = {}
   if (role !== undefined) updateData.role = role
-  if (isActive !== undefined) updateData.is_active = isActive
+  // Note: is_active field doesn't exist in profiles table - removed to prevent 42703 error
 
   const { error } = await serviceRoleSupabase
     .from('profiles')

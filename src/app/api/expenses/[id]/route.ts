@@ -78,7 +78,7 @@ export async function PATCH(
       .eq('id', id)
       .select(`
         *,
-        added_by_profile:profiles!added_by(full_name),
+        added_by_profile:profiles!case_expenses_added_by_fkey(full_name),
         case:cases(id, case_uid, case_title)
       `)
       .single()

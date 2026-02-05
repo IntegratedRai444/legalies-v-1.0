@@ -35,7 +35,7 @@ export async function GET() {
     // Active cases and total cases
     serviceRoleSupabase
       .from('cases')
-      .select('id, case_title, status, assigned_lawyer_id, priority, last_updated_at, next_hearing_date, court_name, court_city, court_state, profiles!cases_assigned_lawyer_id_fkey(full_name)')
+      .select('id, case_title, status, assigned_lawyer_id, priority, last_updated_at, next_hearing_date, court_name, court_city, court_state, assigned_lawyer:profiles!cases_assigned_lawyer_id_fkey(full_name)')
       .eq('firm_id', profile.firm_id),
 
     // Advocate workload
@@ -62,7 +62,7 @@ export async function GET() {
       .from('activity_logs')
       .select(`
           *,
-          user:profiles(full_name),
+          user:profiles!activity_logs_user_id_fkey(full_name),
           case:cases(case_title)
         `)
       .eq('firm_id', profile.firm_id)

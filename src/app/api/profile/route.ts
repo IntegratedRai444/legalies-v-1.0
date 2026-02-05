@@ -49,8 +49,7 @@ export async function POST(request: NextRequest) {
       const { data: profile, error } = await supabase
         .from('profiles')
         .update({
-          full_name: body.full_name,
-          phone: body.phone
+          full_name: body.full_name
         })
         .eq('id', user.id)
         .select()
@@ -70,7 +69,6 @@ export async function POST(request: NextRequest) {
       .insert({
         id: user.id,
         full_name: body.full_name,
-        phone: body.phone,
         role: 'advocate' // Securely hardcoded
       })
       .select()

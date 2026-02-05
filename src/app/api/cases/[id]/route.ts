@@ -61,7 +61,8 @@ export async function GET(
         agreed_fee,
         last_updated_at,
         created_at,
-        assigned_lawyer:profiles(id, full_name, phone, role),
+        assigned_lawyer:profiles!cases_assigned_lawyer_id_fkey(id, full_name, role),
+        creator:profiles!cases_created_by_fkey(id, full_name, email),
         case_parties(
           id,
           role_label,
