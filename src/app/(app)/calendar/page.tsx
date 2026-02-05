@@ -62,7 +62,7 @@ export default function GlobalCalendarPage() {
       if (data.error) {
         toast.error(data.error)
       } else {
-        setEvents(data)
+        setEvents(Array.isArray(data.data) ? data.data : [])
       }
     } catch {
       toast.error('Failed to fetch calendar events')
@@ -88,7 +88,7 @@ export default function GlobalCalendarPage() {
   })
 
   const getEventsForDay = (day: Date) => {
-    return events.filter(event => isSameDay(new Date(event.date), day))
+    return Array.isArray(events) ? events.filter(event => isSameDay(new Date(event.date), day)) : []
   }
 
   const selectedDayEvents = selectedDay ? getEventsForDay(selectedDay) : []
@@ -152,16 +152,16 @@ export default function GlobalCalendarPage() {
                       {format(day, 'd')}
                     </span>
                     <div className="flex flex-col gap-0.5">
-                      {dayEvents.filter(e => e.type === 'hearing').length > 0 && (
+                      {Array.isArray(dayEvents) && dayEvents.filter(e => e.type === 'hearing').length > 0 && (
                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                       )}
-                      {dayEvents.filter(e => e.type === 'task').length > 0 && (
+                      {Array.isArray(dayEvents) && dayEvents.filter(e => e.type === 'task').length > 0 && (
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                       )}
                     </div>
                   </div>
                   <div className="space-y-1 overflow-hidden">
-                    {dayEvents.slice(0, 3).map(event => (
+                    {Array.isArray(dayEvents) && dayEvents.slice(0, 3).map(event => (
                       <div 
                         key={event.id}
                         className={cn(
@@ -174,7 +174,7 @@ export default function GlobalCalendarPage() {
                         {event.title}
                       </div>
                     ))}
-                    {dayEvents.length > 3 && (
+                    {Array.isArray(dayEvents) && dayEvents.length > 3 && (
                       <div className="text-[10px] text-muted-foreground pl-1">
                         + {dayEvents.length - 3} more
                       </div>
@@ -198,14 +198,14 @@ export default function GlobalCalendarPage() {
             </CardHeader>
             <CardContent className="p-0 flex-1 min-h-0">
               <ScrollArea className="h-full px-6 py-4">
-                {selectedDayEvents.length === 0 ? (
+                {Array.isArray(selectedDayEvents) && selectedDayEvents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
                     <CalendarIcon className="w-12 h-12 mb-4 opacity-20" />
                     <p className="text-sm">No events scheduled for this day</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {selectedDayEvents.map(event => (
+                    {Array.isArray(selectedDayEvents) && selectedDayEvents.map(event => (
                       <div 
                         key={event.id} 
                         className={cn(
