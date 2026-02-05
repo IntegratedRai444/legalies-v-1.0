@@ -13,11 +13,19 @@ export async function GET() {
       return errorResponse('Unauthorized', 401)
     }
 
+    // Debug: Log user context
+    console.log('Dashboard API - USER ID:', user.id)
+    console.log('Dashboard API - USER EMAIL:', user.email)
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('firm_id')
       .eq('id', user.id)
       .single()
+
+    // Debug: Log profile context
+    console.log('Dashboard API - USER PROFILE:', profile)
+    console.log('Dashboard API - USER FIRM_ID:', profile?.firm_id)
 
     if (!profile?.firm_id) {
       console.warn('User has no firm_id associated:', user.id)

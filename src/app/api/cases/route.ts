@@ -13,6 +13,10 @@ export async function GET(request: NextRequest) {
       return errorResponse('Unauthorized', 401)
     }
 
+    // Debug: Log user context
+    console.log('Cases API - USER ID:', user.id)
+    console.log('Cases API - USER EMAIL:', user.email)
+
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
     const status = searchParams.get('status')
@@ -22,6 +26,10 @@ export async function GET(request: NextRequest) {
       .select('role, firm_id')
       .eq('id', user.id)
       .single()
+
+    // Debug: Log profile context
+    console.log('Cases API - USER PROFILE:', profile)
+    console.log('Cases API - USER FIRM_ID:', profile?.firm_id)
 
     if (!profile?.firm_id) {
       console.warn('User has no firm_id associated:', user.id)
@@ -123,7 +131,17 @@ export async function GET(request: NextRequest) {
     }
     
     // Debug: Log all cases and their statuses
-    console.log('Cases API - All cases fetched:', cases?.map(c => ({ id: c.id, case_uid: c.case_uid, status: c.status })))
+    console.log('Cases API - All cases fetched:', cases?.map(c => ({ id: c.id, case_uid: c.case_uid, status: c.status, firm_id: c.firm_id })))
+    
+    // Debug: Check if any cases have different firm_id
+    const mismatchedFirmCases = cases?.filter(c => c.firm_id !== profile.firm_id)
+    if (mismatchedFirmCases && mismatchedFirmCases.length > 0) {
+      console.log('Cases API - Cases with different firm_id:', mismatchedFirmCases.map(c => ({ id: c.id, case_uid: c.case_uid, case_firm_id: c.firm_id, user_firm_id: profile.firm_id })))
+    }
+    
+    // Debug: Show distinct statuses in the result
+    const distinctStatuses = [...new Set(cases?.map(c => c.status).filter(Boolean))]
+    console.log('Cases API - Distinct statuses in fetched cases:', distinctStatuses)
 
     if (error) {
       console.error('Case Fetch Error:', error)

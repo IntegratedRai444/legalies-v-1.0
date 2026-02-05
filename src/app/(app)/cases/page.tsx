@@ -27,9 +27,13 @@ function CasesContent() {
       if (search) params.set('search', search)
       if (status && status !== 'all') params.set('status', status)
 
+      console.log('Frontend - Fetching cases with params:', params.toString())
+      
       const res = await fetch(`/api/cases?${params}`, {
         credentials: 'include'
       })
+      
+      console.log('Frontend - Cases API response status:', res.status)
       
       if (!res.ok) {
         throw new Error(`API Error: ${res.status}`)
@@ -38,12 +42,17 @@ function CasesContent() {
       const text = await res.text()
       const result = text ? JSON.parse(text) : null
       
+      console.log('Frontend - Cases API response:', result)
+      
       if (result?.error || !Array.isArray(result?.data)) {
+        console.log('Frontend - Setting cases to empty due to error or invalid data')
         setCases([])
       } else {
+        console.log('Frontend - Setting cases:', result.data.length, 'cases')
         setCases(result.data)
       }
-    } catch {
+    } catch (error) {
+      console.error('Frontend - Error fetching cases:', error)
       toast.error('Failed to load cases')
       setCases([])
     } finally {
