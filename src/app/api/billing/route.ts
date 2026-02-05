@@ -23,10 +23,8 @@ export async function GET(request: NextRequest) {
       return errorResponse('No firm associated', 403)
     }
 
-    // Admins must not see billing data (retaining business logic)
-    if (normalizeRole(profile.role || '') === 'admin') {
-      return successResponse([])
-    }
+    // Billing is available to all firm users
+    // No role restrictions - firm membership grants access
 
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get('status')

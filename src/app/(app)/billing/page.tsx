@@ -12,7 +12,7 @@ export default function BillingPage() {
   const supabase = createClient()
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [activeTab, setActiveTab] = useState('all')
-  const [role, setRole] = useState<string | null>(null)
+  const [firmId, setFirmId] = useState<string | null>(null)
   const [stats, setStats] = useState({
     totalRevenue: 0,
     pendingInvoices: 0,
@@ -27,8 +27,8 @@ export default function BillingPage() {
     async function fetchUser() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-        setRole(data?.role || null)
+        const { data } = await supabase.from('profiles').select('firm_id').eq('id', user.id).single()
+        setFirmId(data?.firm_id || null)
       }
     }
     fetchUser()
@@ -45,13 +45,11 @@ export default function BillingPage() {
               const newStats = invoices.reduce((acc, inv) => {
               acc.totalInvoices += 1
               
-              // Only calculate financial stats if role is NOT admin
-              if (role !== 'admin') {
-                if (inv.status === 'Paid') {
-                  acc.totalRevenue += Number(inv.total_amount || 0)
-                  if (inv.updated_at && inv.updated_at.startsWith(today)) {
-                    acc.paidToday += Number(inv.total_amount || 0)
-                  }
+              // Calculate financial stats for all firm users
+              if (inv.status === 'Paid') {
+                acc.totalRevenue += Number(inv.total_amount || 0)
+                if (inv.updated_at && inv.updated_at.startsWith(today)) {
+                  acc.paidToday += Number(inv.total_amount || 0)
                 }
               }
 
@@ -72,8 +70,8 @@ export default function BillingPage() {
           console.error('Failed to fetch stats:', error)
         }
       }
-      if (role) fetchStats()
-    }, [refreshTrigger, role])
+      if (firmId) fetchStats()
+    }, [refreshTrigger, firmId])
 
 
   return (
@@ -82,16 +80,14 @@ export default function BillingPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Billing System</h1>
           <p className="text-muted-foreground">
-            {role === 'admin' 
-              ? 'Oversee firm-wide invoice statuses and operational billing flow.' 
-              : 'Manage invoices, payments, and financial records for your cases.'}
+            Manage invoices, payments, and financial records for your cases.
           </p>
         </div>
-        {role !== 'admin' && <CreateInvoiceModal onInvoiceCreated={triggerRefresh} />}
+        {firmId && <CreateInvoiceModal onInvoiceCreated={triggerRefresh} />}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {role !== 'admin' && (
+        {firmId && (
           <Card className="bg-card/50 backdrop-blur border-l-4 border-l-emerald-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -103,21 +99,6 @@ export default function BillingPage() {
                   All time collected
                 </p>
               </CardContent>
-          </Card>
-        )}
-
-        {role === 'admin' && (
-          <Card className="bg-card/50 backdrop-blur border-l-4 border-l-primary">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Operations Mode</CardTitle>
-              <Shield className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">Financials Hidden</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Viewing status & tracking only
-              </p>
-            </CardContent>
           </Card>
         )}
 
@@ -146,7 +127,7 @@ export default function BillingPage() {
           </CardContent>
         </Card>
         
-        {role !== 'admin' ? (
+        {firmId ? (
           <Card className="bg-card/50 backdrop-blur border-l-4 border-l-emerald-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Paid Today</CardTitle>
@@ -156,19 +137,6 @@ export default function BillingPage() {
               <div className="text-2xl font-bold">₹{stats.paidToday.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Successfully processed
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="bg-card/50 backdrop-blur border-l-4 border-l-blue-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Cases</CardTitle>
-              <ReceiptText className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalInvoices}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Firm-wide invoices
               </p>
             </CardContent>
           </Card>

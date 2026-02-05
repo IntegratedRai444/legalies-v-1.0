@@ -29,20 +29,30 @@ export async function GET(
 
     const { data: caseRecord } = await supabase
       .from('cases')
-      .select('id, created_by, assigned_lawyer_id, court_city, court_state')
+      .select('id, created_by, assigned_lawyer_id, firm_id')
       .eq('id', invoice.case_id)
       .single()
 
+    // Verify firm membership and case access
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('firm_id')
       .eq('id', user.id)
       .single()
 
-    const isAdmin = normalizeRole(profile?.role || '') === 'admin'
+    if (!profile?.firm_id) {
+      return NextResponse.json({ success: false, error: 'No firm associated' }, { status: 403 })
+    }
+
+    // Ensure user belongs to the same firm as the case
+    if (caseRecord?.firm_id !== profile.firm_id) {
+      return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 })
+    }
+
+    // Allow access if user is case owner or assigned lawyer
     const isOwner = caseRecord?.created_by === user.id || caseRecord?.assigned_lawyer_id === user.id
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
 
@@ -53,16 +63,6 @@ export async function GET(
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 })
-    }
-
-    // Strip financial data for admins
-    if (isAdmin && data) {
-      const strippedData = data.map(item => ({
-        ...item,
-        unit_price: null,
-        amount: null
-      }))
-      return NextResponse.json({ success: true, data: strippedData })
     }
 
     return NextResponse.json({ success: true, data: data || [] })
