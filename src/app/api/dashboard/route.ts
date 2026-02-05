@@ -85,7 +85,7 @@ export async function GET() {
 
       supabase
         .from('cases')
-        .select('status, court_city, court_state')
+        .select('id, status, court_city, court_state')
         .eq('firm_id', firmId),
 
       supabase
@@ -122,8 +122,17 @@ export async function GET() {
     }
 
     const casesCountData = casesCountRes.data || []
-    const activeCases = casesCountData.filter(c => c.status?.toLowerCase() === 'active').length
+    
+    // Debug: Log all status values to understand what's in the database
+    console.log('Dashboard Debug - All case statuses:', casesCountData.map(c => ({ id: c.id, status: c.status })))
+    
+    const activeCases = casesCountData.filter(c => {
+      const status = c.status?.toLowerCase().trim()
+      return status === 'active'
+    }).length
     const totalCases = casesCountData.length
+    
+    console.log('Dashboard Debug - Active cases count:', activeCases, 'Total cases:', totalCases)
 
     const normalizeCaseInHearing = (h: any) => ({
       ...h,
