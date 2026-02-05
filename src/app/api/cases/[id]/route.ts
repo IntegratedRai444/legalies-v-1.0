@@ -61,7 +61,7 @@ export async function GET(
         agreed_fee,
         last_updated_at,
         created_at,
-        assigned_lawyer:profiles!cases_assigned_lawyer_id_fkey(id, full_name, phone, role),
+        assigned_lawyer:profiles(id, full_name, phone, role),
         case_parties(
           id,
           role_label,
@@ -102,7 +102,7 @@ export async function GET(
         id: cp.id,
         party_id: cp.party_id,
         role_label: cp.role_label,
-        party: cp.party
+        party: cp.party || null
       }))
 
     const opponents = rawParties
@@ -111,11 +111,13 @@ export async function GET(
         id: cp.id,
         party_id: cp.party_id,
         role_label: cp.role_label,
-        party: cp.party
+        party: cp.party || null
       }))
 
     const responseData = { ...caseData }
 
+    // Null-safe handling for all relations
+    responseData.assigned_lawyer = responseData.assigned_lawyer || null
     responseData.hearings = responseData.hearings || []
     responseData.tasks = responseData.tasks || []
     responseData.diary_notes = responseData.diary_notes || []
